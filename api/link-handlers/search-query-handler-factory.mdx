@@ -1,0 +1,451 @@
+---
+title: SearchQueryHandlerFactory
+description: Specialized factory for creating search query handlers
+---
+
+The `SearchQueryHandlerFactory` extends `ListLinkHandlerFactory` to provide specialized handling for search queries. It treats the ID field as the search string and creates `SearchQueryHandler` instances.
+
+## Class Overview
+
+```java
+public abstract class SearchQueryHandlerFactory extends ListLinkHandlerFactory
+```
+
+This factory is specifically designed for search functionality, where:
+- The "ID" represents the search query string
+- Content filters represent search categories (e.g., "videos", "channels", "playlists")
+- Sort filters represent result ordering (e.g., "relevance", "upload_date", "view_count")
+
+## Abstract Methods (Must Override)
+
+<ParamField path="getUrl" type="String getUrl(String query, List<String> contentFilter, String sortFilter)">
+  Construct a search URL from a query string with filters applied.
+
+  **Parameters:**
+  - `query` (String) - The search query string
+  - `contentFilter` (List&lt;String&gt;) - List of content type filters (e.g., search only videos)
+  - `sortFilter` (String) - Sort order for results (e.g., "relevance", "date")
+
+  **Returns:** String - The constructed search URL with query and filters
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be constructed
+  - `UnsupportedOperationException` - If URL construction is not supported
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String getUrl(String query, List<String> contentFilter, String sortFilter) 
+          throws ParsingException {
+      try {
+          StringBuilder url = new StringBuilder("https://example.com/search?");
+          url.append("q=").append(URLEncoder.encode(query, "UTF-8"));
+          
+          if (!contentFilter.isEmpty()) {
+              url.append("&type=").append(contentFilter.get(0));
+          }
+          
+          if (!sortFilter.isEmpty()) {
+              url.append("&sort=").append(sortFilter);
+          }
+          
+          return url.toString();
+      } catch (UnsupportedEncodingException e) {
+          throw new ParsingException("Could not encode query", e);
+      }
+  }
+  ```
+
+  **Important:** Always URL-encode the query string to handle special characters properly.
+</ParamField>
+
+## Optional Methods
+
+<ParamField path="getSearchString" type="String getSearchString(String url)">
+  Extract the search query string from a search URL. Override this to enable URL-to-query conversion.
+
+  **Parameters:**
+  - `url` (String) - The search URL to parse
+
+  **Returns:** String - The extracted search query, or empty string if not supported
+
+  **Default:** Returns empty string ("")
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String getSearchString(String url) {
+      try {
+          URI uri = new URI(url);
+          String query = uri.getQuery();
+          
+          if (query != null) {
+              for (String param : query.split("&")) {
+                  String[] pair = param.split("=");
+                  if (pair[0].equals("q") && pair.length > 1) {
+                      return URLDecoder.decode(pair[1], "UTF-8");
+                  }
+              }
+          }
+      } catch (Exception e) {
+          // Return empty string on error
+      }
+      return "";
+  }
+  ```
+
+  **Note:** This method is used by `getId()` to extract the search string from URLs. If you want to support creating handlers from search URLs, you must override this method.
+</ParamField>
+
+## Overridden Methods
+
+<ResponseField name="getId" type="String getId(String url)">
+  Extract the search query string from a URL. Delegates to `getSearchString(url)`.
+
+  **Parameters:**
+  - `url` (String) - The search URL
+
+  **Returns:** String - The search query string
+
+  **Throws:**
+  - `ParsingException` - If the query cannot be extracted
+  - `UnsupportedOperationException` - If not supported
+
+  **Implementation:**
+  ```java
+  @Override
+  public String getId(final String url) throws ParsingException {
+      return getSearchString(url);
+  }
+  ```
+
+  **Note:** This overrides the parent class to treat the "ID" as the search string.
+</ResponseField>
+
+<ResponseField name="fromQuery" type="SearchQueryHandler fromQuery(String query, List<String> contentFilter, String sortFilter)">
+  Build a SearchQueryHandler from a search query with filters. This is the primary method for creating search handlers.
+
+  **Parameters:**
+  - `query` (String) - The search query string
+  - `contentFilter` (List&lt;String&gt;) - Content type filters for the search
+  - `sortFilter` (String) - Sort order for results
+
+  **Returns:** SearchQueryHandler - Complete handler with query and filters
+
+  **Throws:**
+  - `ParsingException` - If the search URL cannot be constructed
+
+  **Behavior:**
+  1. Calls parent `ListLinkHandlerFactory.fromQuery()`
+  2. Wraps the result in a new SearchQueryHandler
+
+  **Usage:**
+  ```java
+  SearchQueryHandler handler = factory.fromQuery(
+      "new pipe extractor",
+      Arrays.asList("videos"),
+      "relevance"
+  );
+  String query = handler.getSearchString(); // "new pipe extractor"
+  String url = handler.getUrl(); // Search URL with filters
+  ```
+</ResponseField>
+
+<ResponseField name="fromQuery" type="SearchQueryHandler fromQuery(String query)">
+  Build a SearchQueryHandler from a search query without filters.
+
+  **Parameters:**
+  - `query` (String) - The search query string
+
+  **Returns:** SearchQueryHandler - Handler with query and empty filters
+
+  **Throws:**
+  - `ParsingException` - If the search URL cannot be constructed
+
+  **Behavior:**
+  - Calls `fromQuery(query, Collections.emptyList(), "")`
+  - Creates handler with no content or sort filters
+
+  **Usage:**
+  ```java
+  SearchQueryHandler handler = factory.fromQuery("cats");
+  String url = handler.getUrl(); // Basic search URL for "cats"
+  ```
+</ResponseField>
+
+<ResponseField name="onAcceptUrl" type="boolean onAcceptUrl(String url)">
+  Determine if this factory can handle the given URL. Default implementation returns false.
+
+  **Parameters:**
+  - `url` (String) - The URL to validate
+
+  **Returns:** boolean - Always returns `false` by default
+
+  **Default behavior:** 
+  ```java
+  @Override
+  public boolean onAcceptUrl(final String url) {
+      return false;
+  }
+  ```
+
+  **Rationale:** Search URL handling is optional for NewPipe. Services may choose not to support extracting search queries from URLs.
+
+  **Override this** if you want to support creating handlers from search URLs:
+  ```java
+  @Override
+  public boolean onAcceptUrl(String url) {
+      return url.contains("example.com/search?");
+  }
+  ```
+</ResponseField>
+
+## Inherited Methods
+
+SearchQueryHandlerFactory inherits all methods from `ListLinkHandlerFactory`:
+
+- `fromUrl(String url)` - Parse a search URL (requires `onAcceptUrl()` and `getSearchString()` overrides)
+- `fromUrl(String url, String baseUrl)` - Parse with base URL
+- `fromId(String id)` - Create handler from search string (same as query)
+- `fromId(String id, String baseUrl)` - Create with base URL
+- `getAvailableContentFilter()` - Return available search category filters
+- `getAvailableSortFilter()` - Return available sort options
+
+## SearchQueryHandler Class
+
+The `SearchQueryHandler` class extends `ListLinkHandler` with search-specific semantics:
+
+<ResponseField name="SearchQueryHandler" type="class">
+  Immutable data class for search queries. The ID field represents the search string.
+
+  **Constructors:**
+  ```java
+  public SearchQueryHandler(String originalUrl, String url, String searchString,
+                           List<String> contentFilters, String sortFilter)
+  public SearchQueryHandler(ListLinkHandler handler) // Convert from ListLinkHandler
+  ```
+
+  **Inherited Fields:**
+  - `originalUrl` (String) - The original URL
+  - `url` (String) - The normalized search URL
+  - `id` (String) - The search query string
+  - `contentFilters` (List&lt;String&gt;) - Search category filters
+  - `sortFilter` (String) - Result sort order
+
+  **Methods:**
+  - All methods from ListLinkHandler: `getUrl()`, `getId()`, `getContentFilters()`, `getSortFilter()`
+  - `String getSearchString()` - Returns the search query (equivalent to `getId()`)
+
+  **Key Concept:** The `id` field holds the search string, and `getSearchString()` is an alias for `getId()` that makes the intent clearer.
+</ResponseField>
+
+## Implementation Example
+
+```java
+public class YoutubeSearchQueryHandlerFactory extends SearchQueryHandlerFactory {
+    
+    public static final String SEARCH_URL = "https://www.youtube.com/results?";
+    
+    @Override
+    public String getUrl(String query, List<String> contentFilter, String sortFilter) 
+            throws ParsingException {
+        try {
+            StringBuilder url = new StringBuilder(SEARCH_URL);
+            url.append("search_query=")
+               .append(URLEncoder.encode(query, "UTF-8"));
+            
+            // Add content filter
+            if (!contentFilter.isEmpty()) {
+                String filter = contentFilter.get(0);
+                if (filter.equals("videos")) {
+                    url.append("&sp=EgIQAQ%253D%253D");
+                } else if (filter.equals("channels")) {
+                    url.append("&sp=EgIQAg%253D%253D");
+                } else if (filter.equals("playlists")) {
+                    url.append("&sp=EgIQAw%253D%253D");
+                }
+            }
+            
+            // Add sort filter
+            if (!sortFilter.isEmpty()) {
+                switch (sortFilter) {
+                    case "upload_date":
+                        url.append("&sp=CAI%253D");
+                        break;
+                    case "view_count":
+                        url.append("&sp=CAM%253D");
+                        break;
+                    case "rating":
+                        url.append("&sp=CAE%253D");
+                        break;
+                }
+            }
+            
+            return url.toString();
+        } catch (UnsupportedEncodingException e) {
+            throw new ParsingException("Could not encode query", e);
+        }
+    }
+    
+    @Override
+    public String getSearchString(String url) {
+        try {
+            URI uri = new URI(url);
+            String query = uri.getQuery();
+            
+            if (query != null) {
+                for (String param : query.split("&")) {
+                    String[] pair = param.split("=", 2);
+                    if (pair[0].equals("search_query") && pair.length > 1) {
+                        return URLDecoder.decode(pair[1], "UTF-8");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Return empty on error
+        }
+        return "";
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        return url.contains("youtube.com/results?");
+    }
+    
+    @Override
+    public String[] getAvailableContentFilter() {
+        return new String[]{"videos", "channels", "playlists", "music_songs", 
+                           "music_videos", "music_albums"};
+    }
+    
+    @Override
+    public String[] getAvailableSortFilter() {
+        return new String[]{"relevance", "upload_date", "view_count", "rating"};
+    }
+}
+```
+
+## Usage Example
+
+```java
+YoutubeSearchQueryHandlerFactory factory = new YoutubeSearchQueryHandlerFactory();
+
+// Create handler from search query
+SearchQueryHandler handler1 = factory.fromQuery("new pipe extractor");
+String url1 = handler1.getUrl();
+String query1 = handler1.getSearchString(); // "new pipe extractor"
+
+// Create handler with filters
+List<String> filters = Arrays.asList("videos");
+SearchQueryHandler handler2 = factory.fromQuery(
+    "tutorial",
+    filters,
+    "view_count"
+);
+String url2 = handler2.getUrl(); // Search URL with filters
+String query2 = handler2.getSearchString(); // "tutorial"
+String sort = handler2.getSortFilter(); // "view_count"
+
+// Parse search URL (if onAcceptUrl is implemented)
+if (factory.acceptUrl("https://youtube.com/results?search_query=cats")) {
+    SearchQueryHandler handler3 = factory.fromUrl(
+        "https://youtube.com/results?search_query=cats"
+    );
+    String query3 = handler3.getSearchString(); // "cats"
+}
+
+// Check available filters
+String[] contentFilters = factory.getAvailableContentFilter();
+String[] sortFilters = factory.getAvailableSortFilter();
+```
+
+## Search Filter Design
+
+### Content Filters for Search
+
+Content filters in search context typically represent:
+- **Content types**: "videos", "channels", "playlists"
+- **Categories**: "music", "gaming", "news"
+- **Attributes**: "hd", "4k", "creative_commons"
+- **Duration**: "short", "medium", "long"
+- **Features**: "live", "subtitles", "3d"
+
+Example:
+```java
+@Override
+public String[] getAvailableContentFilter() {
+    return new String[]{
+        "videos", "channels", "playlists",  // Content types
+        "hd", "4k",                         // Quality
+        "short", "long",                    // Duration
+        "live"                              // Features
+    };
+}
+```
+
+### Sort Filters for Search
+
+Sort filters for search typically include:
+- **relevance** - Default, most relevant results
+- **upload_date** / **date** - Newest first
+- **view_count** / **views** - Most viewed
+- **rating** - Highest rated
+
+Example:
+```java
+@Override
+public String[] getAvailableSortFilter() {
+    return new String[]{"relevance", "upload_date", "view_count", "rating"};
+}
+```
+
+## Special Considerations
+
+### URL Encoding
+
+Always URL-encode search queries to handle:
+- Spaces and special characters
+- Non-ASCII characters (Unicode)
+- Reserved URL characters (&, =, ?, etc.)
+
+```java
+String encoded = URLEncoder.encode(query, "UTF-8");
+```
+
+### Empty Query Handling
+
+Decide how to handle empty search strings:
+- Throw `ParsingException` for invalid input
+- Return a "trending" or "home" page
+- Return an empty results URL
+
+### URL-to-Query Extraction
+
+`getSearchString()` is optional but recommended:
+- Enables creating handlers from search URLs
+- Useful for handling shared search links
+- Required if you want `acceptUrl()` to return true for search URLs
+
+## Best Practices
+
+1. **Always URL-encode queries**: Use `URLEncoder.encode()` in `getUrl()`
+2. **URL-decode in extraction**: Use `URLDecoder.decode()` in `getSearchString()`
+3. **Handle encoding errors**: Wrap encoding operations in try-catch
+4. **Document filter behavior**: Clearly explain what each filter does
+5. **Test special characters**: Ensure queries with quotes, symbols work correctly
+6. **Consider empty queries**: Define behavior for empty search strings
+7. **Match service behavior**: Filters should match what the service actually supports
+
+## Common Pitfalls
+
+1. **Forgetting URL encoding**: Will fail with special characters
+2. **Not handling multiple filters**: Services may support multiple simultaneous filters
+3. **Incorrect parameter format**: Each service has unique URL parameter schemes
+4. **Assuming URL support**: Not all services need to support `fromUrl()` for searches
+5. **Hard-coding base URL**: Consider using the baseUrl parameter for flexibility
+
+## See Also
+
+- [Link Handler System Overview](/api/link-handlers/overview)
+- [LinkHandlerFactory](/api/link-handlers/link-handler-factory) - Base factory
+- [ListLinkHandlerFactory](/api/link-handlers/list-link-handler-factory) - Parent class

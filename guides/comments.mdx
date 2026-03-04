@@ -1,0 +1,489 @@
+---
+title: 'Extracting Comments'
+description: 'Learn how to extract comments from videos and other content'
+---
+
+## Overview
+
+The `CommentsExtractor` class enables extraction of comments from videos and other content types on supported services. Comments can be paginated and may include replies.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Get Comments Extractor">
+    Retrieve the comments extractor for a stream:
+
+    ```java
+    import org.schabi.newpipe.extractor.*;
+    import org.schabi.newpipe.extractor.comments.*;
+    
+    // Initialize NewPipe first
+    NewPipe.init(yourDownloader);
+    
+    try {
+        String videoUrl = "https://www.youtube.com/watch?v=VIDEO_ID";
+        
+        // Get the service
+        StreamingService service = NewPipe.getServiceByUrl(videoUrl);
+        
+        // Get comments extractor
+        CommentsExtractor extractor = 
+            service.getCommentsExtractor(videoUrl);
+        
+        extractor.fetchPage();
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Extract Comments">
+    Get the initial page of comments:
+
+    ```java
+    import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+    
+    CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+    extractor.fetchPage();
+    
+    // Get initial comments
+    InfoItemsPage<CommentsInfoItem> comments = 
+        extractor.getInitialPage();
+    
+    for (CommentsInfoItem comment : comments.getItems()) {
+        System.out.println("Author: " + comment.getUploaderName());
+        System.out.println("Comment: " + comment.getCommentText());
+        System.out.println("Likes: " + comment.getLikeCount());
+        System.out.println();
+    }
+    ```
+  </Step>
+
+  <Step title="Handle Pagination">
+    Load more comments using pagination:
+
+    ```java
+    import org.schabi.newpipe.extractor.Page;
+    
+    InfoItemsPage<CommentsInfoItem> comments = 
+        extractor.getInitialPage();
+    
+    Page nextPage = comments.getNextPage();
+    
+    while (nextPage != null) {
+        // Get next page of comments
+        InfoItemsPage<CommentsInfoItem> page = 
+            extractor.getPage(nextPage);
+        
+        for (CommentsInfoItem comment : page.getItems()) {
+            System.out.println(comment.getCommentText());
+        }
+        
+        nextPage = page.getNextPage();
+    }
+    ```
+  </Step>
+</Steps>
+
+## Comment Information
+
+Access detailed comment metadata:
+
+<CodeGroup>
+```java Basic Comment Data
+for (CommentsInfoItem comment : comments.getItems()) {
+    // Comment text
+    String text = comment.getCommentText();
+    System.out.println("Comment: " + text);
+    
+    // Author information
+    String author = comment.getUploaderName();
+    String authorUrl = comment.getUploaderUrl();
+    System.out.println("By: " + author);
+    
+    // Comment ID and URL
+    String commentId = comment.getCommentId();
+    String commentUrl = comment.getUrl();
+}
+```
+
+```java Engagement Metrics
+for (CommentsInfoItem comment : comments.getItems()) {
+    // Like count
+    int likes = comment.getLikeCount();
+    if (likes != -1) {
+        System.out.println("Likes: " + likes);
+    }
+    
+    // Reply count
+    int replyCount = comment.getReplyCount();
+    if (replyCount > 0) {
+        System.out.println("Replies: " + replyCount);
+    }
+    
+    // Heart status (creator liked)
+    boolean hearted = comment.isHeartedByUploader();
+    if (hearted) {
+        System.out.println("[Hearted by creator]");
+    }
+    
+    // Pinned status
+    boolean pinned = comment.isPinned();
+    if (pinned) {
+        System.out.println("[Pinned]");
+    }
+}
+```
+
+```java Author Details
+import org.schabi.newpipe.extractor.Image;
+
+for (CommentsInfoItem comment : comments.getItems()) {
+    // Author name and URL
+    String authorName = comment.getUploaderName();
+    String authorUrl = comment.getUploaderUrl();
+    
+    // Author avatars
+    List<Image> avatars = comment.getUploaderAvatars();
+    if (!avatars.isEmpty()) {
+        Image avatar = avatars.get(0);
+        System.out.println("Avatar: " + avatar.getUrl());
+    }
+    
+    // Verification status
+    boolean verified = comment.isUploaderVerified();
+    if (verified) {
+        System.out.println("[Verified]");
+    }
+    
+    // Check if comment is by channel owner
+    boolean isOwner = comment.isChannelOwner();
+    if (isOwner) {
+        System.out.println("[Channel Owner]");
+    }
+}
+```
+</CodeGroup>
+
+## Upload Date
+
+Get the comment posting date:
+
+```java
+import org.schabi.newpipe.extractor.localization.DateWrapper;
+
+for (CommentsInfoItem comment : comments.getItems()) {
+    // Textual upload date (as provided by service)
+    String textDate = comment.getTextualUploadDate();
+    System.out.println("Posted: " + textDate);
+    
+    // Parsed date (if available)
+    DateWrapper uploadDate = comment.getUploadDate();
+    if (uploadDate != null) {
+        System.out.println("Date: " + uploadDate.offsetDateTime());
+    }
+}
+```
+
+## Comment Thumbnails
+
+Some comments include thumbnail previews:
+
+```java
+import org.schabi.newpipe.extractor.Image;
+
+for (CommentsInfoItem comment : comments.getItems()) {
+    List<Image> thumbnails = comment.getThumbnails();
+    
+    if (!thumbnails.isEmpty()) {
+        System.out.println("Comment has thumbnail:");
+        for (Image thumbnail : thumbnails) {
+            System.out.println("  " + thumbnail.getUrl() + 
+                             " (" + thumbnail.getWidth() + "x" + 
+                             thumbnail.getHeight() + ")");
+        }
+    }
+}
+```
+
+## Comment Replies
+
+Extract replies to comments:
+
+```java
+import org.schabi.newpipe.extractor.Page;
+
+for (CommentsInfoItem comment : comments.getItems()) {
+    int replyCount = comment.getReplyCount();
+    
+    if (replyCount > 0) {
+        System.out.println("\nComment has " + replyCount + " replies");
+        
+        // Get replies page
+        Page repliesPage = comment.getReplies();
+        
+        if (repliesPage != null) {
+            // Fetch replies using the extractor
+            InfoItemsPage<CommentsInfoItem> replies = 
+                extractor.getPage(repliesPage);
+            
+            for (CommentsInfoItem reply : replies.getItems()) {
+                System.out.println("  Reply: " + reply.getCommentText());
+                System.out.println("  By: " + reply.getUploaderName());
+            }
+        }
+    }
+}
+```
+
+## Comments Count
+
+Get the total number of comments:
+
+```java
+CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+extractor.fetchPage();
+
+// Get total comment count (may be -1 if unavailable)
+int totalComments = extractor.getCommentsCount();
+
+if (totalComments != -1) {
+    System.out.println("Total comments: " + totalComments);
+} else {
+    System.out.println("Comment count unavailable");
+}
+```
+
+## Checking if Comments are Disabled
+
+<Warning>
+  Some videos have comments disabled. Always check before attempting to extract.
+</Warning>
+
+```java
+CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+extractor.fetchPage();
+
+// Check if comments are disabled
+boolean disabled = extractor.isCommentsDisabled();
+
+if (disabled) {
+    System.out.println("Comments are disabled for this video");
+    return;
+}
+
+// Proceed with extraction
+InfoItemsPage<CommentsInfoItem> comments = extractor.getInitialPage();
+```
+
+## Loading All Comments
+
+Efficiently load all available comments:
+
+```java
+import java.util.ArrayList;
+
+public List<CommentsInfoItem> getAllComments(String videoUrl) 
+        throws Exception {
+    
+    StreamingService service = NewPipe.getServiceByUrl(videoUrl);
+    CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+    extractor.fetchPage();
+    
+    // Check if comments are available
+    if (extractor.isCommentsDisabled()) {
+        return Collections.emptyList();
+    }
+    
+    List<CommentsInfoItem> allComments = new ArrayList<>();
+    
+    // Get initial page
+    InfoItemsPage<CommentsInfoItem> page = extractor.getInitialPage();
+    allComments.addAll(page.getItems());
+    
+    // Get remaining pages
+    Page nextPage = page.getNextPage();
+    
+    while (nextPage != null) {
+        page = extractor.getPage(nextPage);
+        allComments.addAll(page.getItems());
+        nextPage = page.getNextPage();
+        
+        // Optional: Add delay to avoid rate limiting
+        Thread.sleep(100);
+        
+        // Optional: Limit total comments
+        if (allComments.size() >= 1000) {
+            break;
+        }
+    }
+    
+    return allComments;
+}
+```
+
+## Comment Description
+
+Some comments have rich text descriptions:
+
+```java
+import org.schabi.newpipe.extractor.stream.Description;
+
+for (CommentsInfoItem comment : comments.getItems()) {
+    // Get description object (if available)
+    Description description = comment.getCommentTextObject();
+    
+    if (description != null) {
+        String content = description.getContent();
+        System.out.println("Comment: " + content);
+    } else {
+        // Fall back to plain text
+        String text = comment.getCommentText();
+        System.out.println("Comment: " + text);
+    }
+}
+```
+
+## Error Handling
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+
+try {
+    CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+    extractor.fetchPage();
+    
+    if (extractor.isCommentsDisabled()) {
+        System.out.println("Comments are disabled");
+        return;
+    }
+    
+    InfoItemsPage<CommentsInfoItem> comments = extractor.getInitialPage();
+    
+    // Check for extraction errors
+    List<Throwable> errors = comments.getErrors();
+    if (!errors.isEmpty()) {
+        System.out.println("Some comments failed to extract:");
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getMessage());
+        }
+    }
+    
+    // Process comments
+    for (CommentsInfoItem comment : comments.getItems()) {
+        System.out.println(comment.getCommentText());
+    }
+    
+} catch (ContentNotAvailableException e) {
+    System.err.println("Content not available: " + e.getMessage());
+} catch (ExtractionException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.comments.*;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+
+public class CommentsExample {
+    public static void main(String[] args) {
+        // Initialize
+        NewPipe.init(yourDownloader);
+        
+        try {
+            String url = "https://www.youtube.com/watch?v=VIDEO_ID";
+            
+            // Get service and extractor
+            StreamingService service = NewPipe.getServiceByUrl(url);
+            CommentsExtractor extractor = service.getCommentsExtractor(url);
+            extractor.fetchPage();
+            
+            // Check if comments are available
+            if (extractor.isCommentsDisabled()) {
+                System.out.println("Comments are disabled");
+                return;
+            }
+            
+            // Get comment count
+            int totalComments = extractor.getCommentsCount();
+            if (totalComments != -1) {
+                System.out.println("Total comments: " + totalComments);
+            }
+            
+            // Get initial comments
+            InfoItemsPage<CommentsInfoItem> comments = 
+                extractor.getInitialPage();
+            
+            System.out.println("\n=== Top Comments ===");
+            
+            // Display first 10 comments
+            int count = 0;
+            for (CommentsInfoItem comment : comments.getItems()) {
+                if (count >= 10) break;
+                
+                System.out.println("\n" + (count + 1) + ".");
+                System.out.println("Author: " + comment.getUploaderName());
+                
+                if (comment.isUploaderVerified()) {
+                    System.out.print(" [Verified]");
+                }
+                if (comment.isChannelOwner()) {
+                    System.out.print(" [Creator]");
+                }
+                System.out.println();
+                
+                System.out.println("Comment: " + comment.getCommentText());
+                
+                int likes = comment.getLikeCount();
+                if (likes != -1) {
+                    System.out.println("Likes: " + likes);
+                }
+                
+                int replies = comment.getReplyCount();
+                if (replies > 0) {
+                    System.out.println("Replies: " + replies);
+                }
+                
+                String date = comment.getTextualUploadDate();
+                if (date != null) {
+                    System.out.println("Posted: " + date);
+                }
+                
+                count++;
+            }
+            
+            // Check for more comments
+            if (comments.getNextPage() != null) {
+                System.out.println("\nMore comments available...");
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Check if comments are disabled** - Always verify before extraction
+2. **Handle missing data gracefully** - Not all fields are available for all services
+3. **Implement rate limiting** - Add delays when paginating through many comments
+4. **Process replies carefully** - Replies may require additional requests
+5. **Cache results** - Avoid re-extracting the same comments
+
+<Tip>
+  Comment availability and features vary by service. YouTube supports replies, likes, and verification badges, while other services may have limited functionality.
+</Tip>
+
+## Next Steps
+
+- Learn about [error handling patterns](/guides/error-handling)
+- Explore [stream extraction](/guides/extracting-streams)
+- Learn about [search functionality](/guides/search)

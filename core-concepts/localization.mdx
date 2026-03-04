@@ -1,0 +1,575 @@
+---
+title: Localization Support
+description: Multi-language and region support in NewPipe Extractor
+---
+
+NewPipe Extractor provides comprehensive localization support, allowing extraction of content in different languages and for different regions.
+
+## Core Concepts
+
+The localization system consists of two main components:
+
+<CardGroup cols={2}>
+  <Card title="Localization" icon="language">
+    Language preferences for UI text and content metadata
+    
+    **Format**: `language-Country` (e.g., `en-GB`, `fr-CA`)
+  </Card>
+  <Card title="Content Country" icon="globe">
+    Geographic region for content recommendations
+    
+    **Format**: ISO country code (e.g., `US`, `DE`, `JP`)
+  </Card>
+</CardGroup>
+
+<Info>
+**Localization** affects the language of extracted metadata (titles, descriptions), while **Content Country** affects which content is shown (e.g., trending videos vary by country).
+</Info>
+
+## Localization Class
+
+The `Localization` class represents a language and optional country code:
+
+```java
+public class Localization implements Serializable {
+    public static final Localization DEFAULT = new Localization("en", "GB");
+    
+    private final String languageCode;  // ISO 639-1 (e.g., "en", "de")
+    private final String countryCode;   // ISO 3166-1 (e.g., "GB", "US")
+    
+    // Constructors
+    public Localization(String languageCode, String countryCode) {
+        this.languageCode = languageCode;
+        this.countryCode = countryCode;
+    }
+    
+    public Localization(String languageCode) {
+        this(languageCode, null);
+    }
+    
+    // Getters
+    public String getLanguageCode() {
+        return languageCode;
+    }
+    
+    public String getCountryCode() {
+        return countryCode == null ? "" : countryCode;
+    }
+    
+    // Get formatted code
+    public String getLocalizationCode() {
+        return languageCode + 
+               (countryCode == null ? "" : "-" + countryCode);
+    }
+}
+```
+
+### Creating Localizations
+
+<Tabs>
+  <Tab title="Constructor">
+    Direct instantiation:
+    
+    ```java
+    // Language and country
+    Localization enGB = new Localization("en", "GB");
+    
+    // Language only
+    Localization fr = new Localization("fr");
+    ```
+  </Tab>
+  
+  <Tab title="From Locale">
+    Convert from Java `Locale`:
+    
+    ```java
+    Locale locale = Locale.GERMANY;  // de_DE
+    Localization localization = Localization.fromLocale(locale);
+    // Creates: Localization("de", "DE")
+    ```
+  </Tab>
+  
+  <Tab title="From Code">
+    Parse from localization code:
+    
+    ```java
+    Optional<Localization> loc = 
+        Localization.fromLocalizationCode("fr-CA");
+    
+    if (loc.isPresent()) {
+        Localization frCA = loc.get();
+        // languageCode: "fr", countryCode: "CA"
+    }
+    ```
+  </Tab>
+  
+  <Tab title="List Creation">
+    Create multiple localizations:
+    
+    ```java
+    List<Localization> supported = Localization.listFrom(
+        "en", "en-GB", "en-US", 
+        "fr", "fr-CA",
+        "de", "de-DE", "de-AT"
+    );
+    ```
+  </Tab>
+</Tabs>
+
+### Localization Code Format
+
+The localization code follows BCP 47 language tag format:
+
+```java
+String code = localization.getLocalizationCode();
+// "en"     - English (no country)
+// "en-GB"  - English (United Kingdom)
+// "en-US"  - English (United States)
+// "fr-CA"  - French (Canada)
+// "zh-CN"  - Chinese (Simplified)
+```
+
+## ContentCountry Class
+
+The `ContentCountry` class represents geographic regions:
+
+```java
+public class ContentCountry implements Serializable {
+    public static final ContentCountry DEFAULT = 
+        new ContentCountry(Localization.DEFAULT.getCountryCode());
+    
+    private final String countryCode;  // ISO 3166-1 alpha-2
+    
+    public ContentCountry(String countryCode) {
+        this.countryCode = countryCode;
+    }
+    
+    public String getCountryCode() {
+        return countryCode;
+    }
+}
+```
+
+### Creating Content Countries
+
+```java
+// Single country
+ContentCountry us = new ContentCountry("US");
+ContentCountry de = new ContentCountry("DE");
+
+// Multiple countries
+List<ContentCountry> countries = ContentCountry.listFrom(
+    "US", "GB", "CA", "AU", "DE", "FR", "JP"
+);
+```
+
+<Note>
+Content country codes use ISO 3166-1 alpha-2 format (two-letter codes). Examples: `US`, `GB`, `DE`, `JP`, `BR`, `IN`.
+</Note>
+
+## Global Configuration
+
+Set global preferences via the `NewPipe` class:
+
+### During Initialization
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
+
+// Initialize with localization
+Localization localization = new Localization("de", "DE");
+ContentCountry country = new ContentCountry("DE");
+NewPipe.init(downloader, localization, country);
+
+// Or with just localization (country derived from localization)
+NewPipe.init(downloader, new Localization("fr", "FR"));
+
+// Or with defaults
+NewPipe.init(downloader);  // Uses en-GB and GB
+```
+
+### After Initialization
+
+```java
+// Change localization
+NewPipe.setPreferredLocalization(new Localization("es", "ES"));
+
+// Change content country
+NewPipe.setPreferredContentCountry(new ContentCountry("ES"));
+
+// Change both together
+NewPipe.setupLocalization(
+    new Localization("ja", "JP"),
+    new ContentCountry("JP")
+);
+
+// Get current settings
+Localization current = NewPipe.getPreferredLocalization();
+ContentCountry currentCountry = NewPipe.getPreferredContentCountry();
+```
+
+## Service-Level Localization
+
+Each `StreamingService` defines supported localizations:
+
+```java
+public abstract class StreamingService {
+    // Services override these methods
+    public List<Localization> getSupportedLocalizations() {
+        return Collections.singletonList(Localization.DEFAULT);
+    }
+    
+    public List<ContentCountry> getSupportedCountries() {
+        return Collections.singletonList(ContentCountry.DEFAULT);
+    }
+}
+```
+
+### YouTube Example
+
+```java
+public class YoutubeService extends StreamingService {
+    private static final List<Localization> SUPPORTED_LANGUAGES = 
+        Localization.listFrom(
+            "af", "am", "ar", "az", "be", "bg", "bn", "bs",
+            "ca", "cs", "da", "de", "el", "en", "en-GB",
+            "es", "es-419", "es-US", "et", "eu", "fa", "fi",
+            "fil", "fr", "fr-CA", "gl", "gu", "hi", "hr",
+            "hu", "hy", "id", "is", "it", "iw", "ja", "ka",
+            "kk", "km", "kn", "ko", "ky", "lo", "lt", "lv",
+            "mk", "ml", "mn", "mr", "ms", "my", "ne", "nl",
+            "no", "pa", "pl", "pt", "pt-PT", "ro", "ru",
+            "si", "sk", "sl", "sq", "sr", "sr-Latn", "sv",
+            "sw", "ta", "te", "th", "tr", "uk", "ur", "uz",
+            "vi", "zh-CN", "zh-HK", "zh-TW", "zu"
+        );
+    
+    private static final List<ContentCountry> SUPPORTED_COUNTRIES = 
+        ContentCountry.listFrom(
+            "DZ", "AR", "AU", "AT", "AZ", "BH", "BD", "BY",
+            "BE", "BO", "BA", "BR", "BG", "KH", "CA", "CL",
+            "CO", "CR", "HR", "CY", "CZ", "DK", "DO", "EC",
+            "EG", "SV", "EE", "FI", "FR", "GE", "DE", "GH",
+            "GR", "GT", "HN", "HK", "HU", "IS", "IN", "ID",
+            "IQ", "IE", "IL", "IT", "JM", "JP", "JO", "KZ",
+            "KE", "KW", "LA", "LV", "LB", "LY", "LI", "LT",
+            "LU", "MY", "MT", "MX", "ME", "MA", "NP", "NL",
+            "NZ", "NI", "NG", "MK", "NO", "OM", "PK", "PA",
+            "PG", "PY", "PE", "PH", "PL", "PT", "PR", "QA",
+            "RO", "RU", "SA", "SN", "RS", "SG", "SK", "SI",
+            "ZA", "KR", "ES", "LK", "SE", "CH", "TW", "TZ",
+            "TH", "TN", "TR", "UG", "UA", "AE", "GB", "US",
+            "UY", "VE", "VN", "YE", "ZW"
+        );
+    
+    @Override
+    public List<Localization> getSupportedLocalizations() {
+        return SUPPORTED_LANGUAGES;
+    }
+    
+    @Override
+    public List<ContentCountry> getSupportedCountries() {
+        return SUPPORTED_COUNTRIES;
+    }
+}
+```
+
+### Localization Resolution
+
+Services resolve user preferences to supported localizations:
+
+```java
+public Localization getLocalization() {
+    Localization preferred = NewPipe.getPreferredLocalization();
+    
+    // 1. Check exact match (language + country)
+    if (getSupportedLocalizations().contains(preferred)) {
+        return preferred;
+    }
+    
+    // 2. Fallback to language code only
+    for (Localization supported : getSupportedLocalizations()) {
+        if (supported.getLanguageCode()
+                .equals(preferred.getLanguageCode())) {
+            return supported;
+        }
+    }
+    
+    // 3. Use default
+    return Localization.DEFAULT;
+}
+
+public ContentCountry getContentCountry() {
+    ContentCountry preferred = NewPipe.getPreferredContentCountry();
+    
+    if (getSupportedCountries().contains(preferred)) {
+        return preferred;
+    }
+    
+    return ContentCountry.DEFAULT;
+}
+```
+
+### Resolution Example
+
+```java
+// User prefers French Canadian
+NewPipe.setPreferredLocalization(new Localization("fr", "CA"));
+
+StreamingService service = NewPipe.getService("YouTube");
+
+// YouTube supports "fr-CA" exactly
+Localization actual = service.getLocalization();
+// Returns: Localization("fr", "CA")
+
+// If service only supported "fr" (no "fr-CA")
+// Would return: Localization("fr")
+
+// If service didn't support French at all
+// Would return: Localization.DEFAULT ("en", "GB")
+```
+
+## Extractor-Level Localization
+
+Individual extractors can override localization:
+
+```java
+public abstract class Extractor {
+    private Localization forcedLocalization = null;
+    private ContentCountry forcedContentCountry = null;
+    
+    // Force specific localization for this extractor
+    public void forceLocalization(Localization localization) {
+        this.forcedLocalization = localization;
+    }
+    
+    public void forceContentCountry(ContentCountry contentCountry) {
+        this.forcedContentCountry = contentCountry;
+    }
+    
+    // Get active localization
+    public Localization getExtractorLocalization() {
+        return forcedLocalization == null 
+            ? getService().getLocalization() 
+            : forcedLocalization;
+    }
+    
+    public ContentCountry getExtractorContentCountry() {
+        return forcedContentCountry == null 
+            ? getService().getContentCountry() 
+            : forcedContentCountry;
+    }
+}
+```
+
+### Per-Extractor Configuration
+
+```java
+// Global setting: English (US)
+NewPipe.setupLocalization(
+    new Localization("en", "US"),
+    new ContentCountry("US")
+);
+
+StreamingService service = NewPipe.getService("YouTube");
+
+// Extractor 1: Use global settings
+StreamExtractor extractor1 = service.getStreamExtractor(url1);
+extractor1.fetchPage();
+String title1 = extractor1.getName();  // English title
+
+// Extractor 2: Force German
+StreamExtractor extractor2 = service.getStreamExtractor(url2);
+extractor2.forceLocalization(new Localization("de", "DE"));
+extractor2.forceContentCountry(new ContentCountry("DE"));
+extractor2.fetchPage();
+String title2 = extractor2.getName();  // German title if available
+```
+
+## Time Ago Parsing
+
+The localization system includes support for parsing relative time strings:
+
+```java
+public abstract class StreamingService {
+    public TimeAgoParser getTimeAgoParser(Localization localization) {
+        TimeAgoParser parser = 
+            TimeAgoPatternsManager.getTimeAgoParserFor(localization);
+        
+        if (parser != null) {
+            return parser;
+        }
+        
+        // Fallback to language-only
+        if (!localization.getCountryCode().isEmpty()) {
+            Localization lessSpecific = 
+                new Localization(localization.getLanguageCode());
+            TimeAgoParser lessSpecificParser = 
+                TimeAgoPatternsManager.getTimeAgoParserFor(lessSpecific);
+            
+            if (lessSpecificParser != null) {
+                return lessSpecificParser;
+            }
+        }
+        
+        throw new IllegalArgumentException(
+            "Localization is not supported: " + localization
+        );
+    }
+}
+```
+
+### Usage in Extractors
+
+```java
+public abstract class Extractor {
+    public TimeAgoParser getTimeAgoParser() {
+        return getService().getTimeAgoParser(getExtractorLocalization());
+    }
+}
+
+// In extractor implementation
+TimeAgoParser parser = getTimeAgoParser();
+OffsetDateTime uploadDate = parser.parse("2 hours ago");
+```
+
+## Three-Letter Language Codes
+
+Convert ISO 639-2/T codes to locales:
+
+```java
+// Convert three-letter code to Locale
+Locale locale = Localization.getLocaleFromThreeLetterCode("fra");
+// Returns: Locale for "fr" (French)
+
+locale = Localization.getLocaleFromThreeLetterCode("deu");
+// Returns: Locale for "de" (German)
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Set Localization Early">
+    Initialize localization during app setup:
+    
+    ```java
+    // At app startup
+    Localization userLocale = getUserPreferredLocalization();
+    ContentCountry userCountry = getUserPreferredCountry();
+    NewPipe.init(downloader, userLocale, userCountry);
+    ```
+  </Accordion>
+  
+  <Accordion title="Respect User Preferences">
+    Use device/browser locale as default:
+    
+    ```java
+    Locale deviceLocale = Locale.getDefault();
+    Localization localization = Localization.fromLocale(deviceLocale);
+    NewPipe.init(downloader, localization);
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle Unsupported Localizations">
+    Always check if a service supports the requested localization:
+    
+    ```java
+    Localization requested = new Localization("ar", "SA");
+    StreamingService service = NewPipe.getService("YouTube");
+    
+    Localization actual = service.getLocalization();
+    if (!actual.equals(requested)) {
+        // Inform user that fallback was used
+        log("Using " + actual + " instead of " + requested);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Use Extractor-Level Overrides Sparingly">
+    Only force localization when necessary:
+    
+    ```java
+    // Good: Extract same content in multiple languages
+    StreamExtractor enExtractor = service.getStreamExtractor(url);
+    enExtractor.forceLocalization(new Localization("en"));
+    enExtractor.fetchPage();
+    String enTitle = enExtractor.getName();
+    
+    StreamExtractor deExtractor = service.getStreamExtractor(url);
+    deExtractor.forceLocalization(new Localization("de"));
+    deExtractor.fetchPage();
+    String deTitle = deExtractor.getName();
+    
+    // Bad: Setting for every extractor (use global instead)
+    ```
+  </Accordion>
+  
+  <Accordion title="Test Multiple Localizations">
+    Test your implementation with various localizations:
+    
+    ```java
+    @Test
+    public void testMultipleLocalizations() {
+        for (Localization loc : testLocalizations) {
+            extractor.forceLocalization(loc);
+            extractor.fetchPage();
+            assertNotNull(extractor.getName());
+        }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common Use Cases
+
+### Multi-Language Content Extraction
+
+```java
+// Extract video title in multiple languages
+String url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+StreamingService service = NewPipe.getService("YouTube");
+
+Map<String, String> titles = new HashMap<>();
+
+for (String langCode : new String[]{"en", "de", "fr", "es"}) {
+    StreamExtractor extractor = service.getStreamExtractor(url);
+    extractor.forceLocalization(new Localization(langCode));
+    extractor.fetchPage();
+    titles.put(langCode, extractor.getName());
+}
+```
+
+### Region-Specific Trending
+
+```java
+// Get trending videos for different countries
+StreamingService service = NewPipe.getService("YouTube");
+KioskList kiosks = service.getKioskList();
+
+for (String countryCode : new String[]{"US", "GB", "DE", "JP"}) {
+    KioskExtractor trending = kiosks.getDefaultKioskExtractor();
+    trending.forceContentCountry(new ContentCountry(countryCode));
+    trending.fetchPage();
+    
+    System.out.println("Trending in " + countryCode);
+    for (StreamInfoItem item : trending.getInitialPage().getItems()) {
+        System.out.println("  " + item.getName());
+    }
+}
+```
+
+## Related Documentation
+
+<CardGroup cols={3}>
+  <Card title="Services" icon="server" href="/core-concepts/services">
+    Service-level localization
+  </Card>
+  <Card title="Extractors" icon="download" href="/core-concepts/extractors">
+    Extractor-level overrides
+  </Card>
+  <Card title="Overview" icon="book" href="/core-concepts/overview">
+    Architecture overview
+  </Card>
+</CardGroup>

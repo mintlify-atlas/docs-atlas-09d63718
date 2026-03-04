@@ -1,0 +1,70 @@
+---
+title: Supported Services Overview
+description: Overview of all streaming services supported by NewPipe Extractor
+---
+
+NewPipe Extractor supports multiple streaming services, each with different capabilities and features. The library provides a unified API to interact with these services while handling service-specific implementations internally.
+
+## Supported Services
+
+<CardGroup cols={2}>
+  <Card title="YouTube" icon="youtube" href="/services/youtube">
+    Full-featured support including videos, audio, live streams, and comments
+  </Card>
+  <Card title="SoundCloud" icon="soundcloud" href="/services/soundcloud">
+    Audio streaming platform with comments support
+  </Card>
+  <Card title="Bandcamp" icon="bandcamp" href="/services/bandcamp">
+    Independent music platform with audio streaming and comments
+  </Card>
+  <Card title="PeerTube" icon="video" href="/services/peertube">
+    Decentralized video platform with federated instances
+  </Card>
+  <Card title="media.ccc.de" icon="presentation" href="/services/mediaccc">
+    Conference recordings and live streams from Chaos Computer Club
+  </Card>
+</CardGroup>
+
+## Service Capabilities
+
+Each service supports different media capabilities. The following table shows what each service can handle:
+
+| Service | Audio | Video | Live Streams | Comments |
+|---------|-------|-------|--------------|----------|
+| YouTube | ✓ | ✓ | ✓ | ✓ |
+| SoundCloud | ✓ | ✗ | ✗ | ✓ |
+| Bandcamp | ✓ | ✗ | ✗ | ✓ |
+| PeerTube | ✗ | ✓ | ✗ | ✓ |
+| media.ccc.de | ✓ | ✓ | ✓ | ✗ |
+
+<Info>
+The extractor automatically detects the service from URLs and uses the appropriate implementation.
+</Info>
+
+## Common Features
+
+All services support the following core features:
+
+- **Stream Extraction**: Retrieve media streams and metadata
+- **Channel/User Extraction**: Get channel information and content
+- **Search**: Search for content within the service
+- **Playlists**: Extract playlist information and items
+
+<Note>
+Some features may be limited or unavailable depending on the service's API capabilities and restrictions.
+</Note>
+
+## Service Selection
+
+Services are identified by unique IDs and can be accessed through the `ServiceList` class:
+
+```java
+// Access services by ID
+YouTube (ID: 0)
+SoundCloud (ID: 1)
+MediaCCC (ID: 2)
+PeerTube (ID: 3)
+Bandcamp (ID: 4)
+```
+
+The extractor automatically determines the correct service from a given URL, so you typically don't need to specify the service manually.

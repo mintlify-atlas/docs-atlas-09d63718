@@ -1,0 +1,402 @@
+---
+title: 'Extracting Playlist Data'
+description: 'Learn how to extract playlist information and retrieve playlist items'
+---
+
+## Overview
+
+The `PlaylistExtractor` and `PlaylistInfo` classes enable extraction of playlist metadata and their contents. This includes regular playlists, mixes, and auto-generated playlists from various services.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Extract Playlist Info">
+    Use `PlaylistInfo.getInfo()` to extract playlist information:
+
+    ```java
+    import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+    import org.schabi.newpipe.extractor.NewPipe;
+    
+    // Initialize NewPipe first
+    NewPipe.init(yourDownloader);
+    
+    try {
+        String playlistUrl = "https://www.youtube.com/playlist?list=PLAYLIST_ID";
+        PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+        
+        System.out.println("Playlist: " + info.getName());
+        System.out.println("Uploader: " + info.getUploaderName());
+        System.out.println("Stream Count: " + info.getStreamCount());
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Access Playlist Items">
+    Retrieve streams from the playlist:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+    
+    PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+    
+    // Get items from the initial page
+    List<StreamInfoItem> streams = info.getRelatedItems();
+    
+    for (StreamInfoItem stream : streams) {
+        System.out.println("Title: " + stream.getName());
+        System.out.println("Uploader: " + stream.getUploaderName());
+        System.out.println("Duration: " + stream.getDuration());
+        System.out.println("URL: " + stream.getUrl());
+        System.out.println();
+    }
+    ```
+  </Step>
+
+  <Step title="Handle Pagination">
+    Load additional items using pagination:
+
+    ```java
+    import org.schabi.newpipe.extractor.Page;
+    import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+    
+    PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+    
+    // Check if there are more items
+    Page nextPage = info.getNextPage();
+    
+    while (nextPage != null) {
+        StreamingService service = NewPipe.getServiceByUrl(playlistUrl);
+        InfoItemsPage<StreamInfoItem> page = 
+            PlaylistInfo.getMoreItems(service, playlistUrl, nextPage);
+        
+        List<StreamInfoItem> items = page.getItems();
+        for (StreamInfoItem item : items) {
+            System.out.println("Item: " + item.getName());
+        }
+        
+        // Get next page
+        nextPage = page.getNextPage();
+    }
+    ```
+  </Step>
+</Steps>
+
+## Playlist Metadata
+
+Access comprehensive playlist information:
+
+<CodeGroup>
+```java Basic Information
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+
+// Playlist identity
+String id = info.getId();
+String name = info.getName();
+String url = info.getUrl();
+
+// Stream count
+long streamCount = info.getStreamCount();
+System.out.println("Total streams: " + streamCount);
+
+// Service ID
+int serviceId = info.getServiceId();
+```
+
+```java Uploader Information
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+
+// Uploader details
+String uploaderName = info.getUploaderName();
+String uploaderUrl = info.getUploaderUrl();
+
+System.out.println("Created by: " + uploaderName);
+System.out.println("Channel: " + uploaderUrl);
+
+// Uploader avatars
+List<Image> uploaderAvatars = info.getUploaderAvatars();
+for (Image avatar : uploaderAvatars) {
+    System.out.println("Avatar: " + avatar.getUrl());
+}
+```
+
+```java Description & Thumbnails
+import org.schabi.newpipe.extractor.stream.Description;
+import org.schabi.newpipe.extractor.Image;
+
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+
+// Playlist description
+Description description = info.getDescription();
+if (description != null) {
+    System.out.println("Description: " + description.getContent());
+}
+
+// Playlist thumbnails
+List<Image> thumbnails = info.getThumbnails();
+for (Image thumbnail : thumbnails) {
+    System.out.println("Thumbnail: " + thumbnail.getUrl() + 
+                     " (" + thumbnail.getWidth() + "x" + 
+                     thumbnail.getHeight() + ")");
+}
+
+// Playlist banners
+List<Image> banners = info.getBanners();
+for (Image banner : banners) {
+    System.out.println("Banner: " + banner.getUrl());
+}
+```
+</CodeGroup>
+
+## Playlist Types
+
+Handle different types of playlists:
+
+```java
+import org.schabi.newpipe.extractor.playlist.PlaylistInfo.PlaylistType;
+
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+PlaylistType type = info.getPlaylistType();
+
+switch (type) {
+    case NORMAL:
+        System.out.println("Regular user-created playlist");
+        break;
+    case MIX_STREAM:
+        System.out.println("Mix based on a specific stream");
+        break;
+    case MIX_MUSIC:
+        System.out.println("Music mix");
+        break;
+    case MIX_GENRE:
+        System.out.println("Genre-based mix");
+        break;
+    default:
+        System.out.println("Unknown playlist type");
+}
+
+// Note: Mixes often have dynamic content that changes
+if (type != PlaylistType.NORMAL) {
+    System.out.println("This is an auto-generated mix");
+}
+```
+
+## Sub-Channel Information
+
+Some playlists have sub-channel information:
+
+```java
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+
+String subChannelName = info.getSubChannelName();
+String subChannelUrl = info.getSubChannelUrl();
+
+if (subChannelUrl != null && !subChannelUrl.isEmpty()) {
+    System.out.println("Sub-channel: " + subChannelName);
+    System.out.println("URL: " + subChannelUrl);
+    
+    List<Image> subChannelAvatars = info.getSubChannelAvatars();
+    for (Image avatar : subChannelAvatars) {
+        System.out.println("Sub-channel avatar: " + avatar.getUrl());
+    }
+}
+```
+
+## Efficient Pagination
+
+Load all playlist items efficiently:
+
+```java
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.Page;
+import java.util.ArrayList;
+
+public List<StreamInfoItem> getAllPlaylistItems(String playlistUrl) 
+        throws Exception {
+    
+    List<StreamInfoItem> allItems = new ArrayList<>();
+    PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+    
+    // Add initial items
+    allItems.addAll(info.getRelatedItems());
+    
+    // Get service for pagination
+    StreamingService service = NewPipe.getServiceByUrl(playlistUrl);
+    Page nextPage = info.getNextPage();
+    
+    // Iterate through all pages
+    while (nextPage != null) {
+        InfoItemsPage<StreamInfoItem> page = 
+            PlaylistInfo.getMoreItems(service, playlistUrl, nextPage);
+        
+        allItems.addAll(page.getItems());
+        nextPage = page.getNextPage();
+        
+        // Optional: Add delay to avoid rate limiting
+        Thread.sleep(100);
+    }
+    
+    return allItems;
+}
+```
+
+## Stream Count Handling
+
+<Tip>
+  Stream counts may be unknown or infinite for certain playlist types, especially mixes.
+</Tip>
+
+```java
+import org.schabi.newpipe.extractor.ListExtractor;
+
+PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+long streamCount = info.getStreamCount();
+
+if (streamCount == ListExtractor.ITEM_COUNT_UNKNOWN) {
+    System.out.println("Stream count is unknown");
+} else if (streamCount == ListExtractor.ITEM_COUNT_INFINITE) {
+    System.out.println("Playlist has infinite streams (e.g., YouTube mix)");
+} else if (streamCount == ListExtractor.ITEM_COUNT_MORE_THAN_100) {
+    System.out.println("More than 100 items, exact count unknown");
+} else {
+    System.out.println("Total streams: " + streamCount);
+}
+```
+
+## Using PlaylistExtractor Directly
+
+For more control over extraction:
+
+```java
+import org.schabi.newpipe.extractor.playlist.PlaylistExtractor;
+
+StreamingService service = NewPipe.getServiceByUrl(playlistUrl);
+PlaylistExtractor extractor = service.getPlaylistExtractor(playlistUrl);
+
+// Fetch the page
+extractor.fetchPage();
+
+// Extract individual fields
+String name = extractor.getName();
+long streamCount = extractor.getStreamCount();
+String uploaderName = extractor.getUploaderName();
+List<Image> thumbnails = extractor.getThumbnails();
+PlaylistInfo.PlaylistType type = extractor.getPlaylistType();
+
+// Get initial items
+InfoItemsPage<StreamInfoItem> initialPage = extractor.getInitialPage();
+List<StreamInfoItem> items = initialPage.getItems();
+```
+
+## Error Handling
+
+<Warning>
+  Playlists can be deleted, made private, or become unavailable. Always handle exceptions appropriately.
+</Warning>
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+
+try {
+    PlaylistInfo info = PlaylistInfo.getInfo(playlistUrl);
+    
+    // Check for partial extraction errors
+    List<Throwable> errors = info.getErrors();
+    if (!errors.isEmpty()) {
+        System.out.println("Some fields failed to extract:");
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getMessage());
+        }
+    }
+    
+    // Use the playlist data
+    List<StreamInfoItem> items = info.getRelatedItems();
+    System.out.println("Successfully loaded " + items.size() + " items");
+    
+} catch (ContentNotAvailableException e) {
+    System.err.println("Playlist not available: " + e.getMessage());
+} catch (PrivateContentException e) {
+    System.err.println("Playlist is private");
+} catch (ExtractionException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.playlist.*;
+import org.schabi.newpipe.extractor.stream.*;
+
+public class PlaylistExtractorExample {
+    public static void main(String[] args) {
+        // Initialize
+        NewPipe.init(yourDownloader);
+        
+        try {
+            String url = "https://www.youtube.com/playlist?list=PLxxxxxx";
+            PlaylistInfo info = PlaylistInfo.getInfo(url);
+            
+            // Playlist information
+            System.out.println("=== Playlist Information ===");
+            System.out.println("Name: " + info.getName());
+            System.out.println("Uploader: " + info.getUploaderName());
+            System.out.println("Type: " + info.getPlaylistType());
+            
+            // Stream count
+            long count = info.getStreamCount();
+            if (count >= 0) {
+                System.out.println("Total streams: " + count);
+            } else {
+                System.out.println("Stream count: Unknown/Infinite");
+            }
+            
+            // Description
+            Description desc = info.getDescription();
+            if (desc != null && !desc.getContent().isEmpty()) {
+                System.out.println("\nDescription:");
+                System.out.println(desc.getContent());
+            }
+            
+            // First 10 items
+            System.out.println("\n=== First Items ===");
+            List<StreamInfoItem> items = info.getRelatedItems();
+            int displayCount = Math.min(10, items.size());
+            
+            for (int i = 0; i < displayCount; i++) {
+                StreamInfoItem item = items.get(i);
+                System.out.println((i + 1) + ". " + item.getName());
+                System.out.println("   Uploader: " + item.getUploaderName());
+                System.out.println("   Duration: " + item.getDuration() + "s");
+            }
+            
+            // Check for more items
+            if (info.getNextPage() != null) {
+                System.out.println("\nMore items available...");
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Handle pagination carefully** - Large playlists may require many requests
+2. **Check playlist type** - Mixes and auto-generated playlists behave differently
+3. **Cache results** - Avoid re-extracting the same playlist repeatedly
+4. **Implement rate limiting** - Add delays between pagination requests
+5. **Check errors** - Use `getErrors()` to handle partial extraction failures
+
+## Next Steps
+
+- Learn about [search functionality](/guides/search)
+- Explore [comment extraction](/guides/comments)
+- Understand [error handling patterns](/guides/error-handling)

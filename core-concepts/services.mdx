@@ -1,0 +1,416 @@
+---
+title: Streaming Services
+description: Understanding the StreamingService architecture and implementation
+---
+
+The `StreamingService` class is the foundation of NewPipe Extractor's multi-platform support. Each streaming platform (YouTube, SoundCloud, etc.) implements this abstract class to provide platform-specific extraction logic.
+
+## Core Concept
+
+A `StreamingService` acts as a factory and registry for all platform-specific components:
+
+- Link handler factories (URL parsing)
+- Extractor factories (data extraction)
+- Localization support
+- Media capabilities
+
+## Class Structure
+
+```java
+public abstract class StreamingService {
+    public StreamingService(int id, String name, 
+                           Set<ServiceInfo.MediaCapability> capabilities)
+    
+    public abstract String getBaseUrl();
+    
+    // Link Handler Factories
+    public abstract LinkHandlerFactory getStreamLHFactory();
+    public abstract ListLinkHandlerFactory getChannelLHFactory();
+    public abstract ListLinkHandlerFactory getPlaylistLHFactory();
+    public abstract SearchQueryHandlerFactory getSearchQHFactory();
+    
+    // Extractor Factories
+    public abstract StreamExtractor getStreamExtractor(LinkHandler linkHandler);
+    public abstract ChannelExtractor getChannelExtractor(ListLinkHandler linkHandler);
+    public abstract PlaylistExtractor getPlaylistExtractor(ListLinkHandler linkHandler);
+    public abstract SearchExtractor getSearchExtractor(SearchQueryHandler queryHandler);
+    
+    // Kiosks (Trending/Featured)
+    public abstract KioskList getKioskList() throws ExtractionException;
+}
+```
+
+## Service Identification
+
+### Service ID
+
+Each service has a unique integer identifier:
+
+```java
+final int serviceId;
+
+public final int getServiceId() {
+    return serviceId;
+}
+```
+
+### Service Info
+
+```java
+public static class ServiceInfo {
+    private final String name;
+    private final Set<MediaCapability> mediaCapabilities;
+    
+    public enum MediaCapability {
+        AUDIO,    // Audio-only content
+        VIDEO,    // Video content
+        LIVE,     // Live streams
+        COMMENTS  // Comment support
+    }
+}
+```
+
+<Info>
+Media capabilities define what types of content the service supports. This helps clients determine available features.
+</Info>
+
+## Implementation Example
+
+Here's how YouTube implements `StreamingService`:
+
+```java
+public class YoutubeService extends StreamingService {
+    
+    public YoutubeService(int id) {
+        super(id, "YouTube", EnumSet.of(AUDIO, VIDEO, LIVE, COMMENTS));
+    }
+    
+    @Override
+    public String getBaseUrl() {
+        return "https://youtube.com";
+    }
+    
+    @Override
+    public LinkHandlerFactory getStreamLHFactory() {
+        return YoutubeStreamLinkHandlerFactory.getInstance();
+    }
+    
+    @Override
+    public StreamExtractor getStreamExtractor(LinkHandler linkHandler) {
+        return new YoutubeStreamExtractor(this, linkHandler);
+    }
+    
+    // ... other factory methods
+}
+```
+
+## Link Type Detection
+
+Services can determine what type of content a URL points to:
+
+```java
+public enum LinkType {
+    NONE,      // URL not recognized
+    STREAM,    // Individual video/audio
+    CHANNEL,   // Content creator channel
+    PLAYLIST   // Playlist or collection
+}
+
+public final LinkType getLinkTypeByUrl(String url) 
+        throws ParsingException {
+    String polishedUrl = Utils.followGoogleRedirectIfNeeded(url);
+    
+    if (getStreamLHFactory().acceptUrl(polishedUrl)) {
+        return LinkType.STREAM;
+    } else if (getChannelLHFactory().acceptUrl(polishedUrl)) {
+        return LinkType.CHANNEL;
+    } else if (getPlaylistLHFactory().acceptUrl(polishedUrl)) {
+        return LinkType.PLAYLIST;
+    }
+    return LinkType.NONE;
+}
+```
+
+### Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+LinkType type = service.getLinkTypeByUrl(
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+);
+// Returns: LinkType.STREAM
+```
+
+## Extractor Factory Methods
+
+### Primary Factories
+
+These methods require explicit `LinkHandler` or query handler objects:
+
+```java
+// Stream extraction
+public abstract StreamExtractor getStreamExtractor(
+    LinkHandler linkHandler
+) throws ExtractionException;
+
+// Channel extraction
+public abstract ChannelExtractor getChannelExtractor(
+    ListLinkHandler linkHandler
+) throws ExtractionException;
+
+// Playlist extraction
+public abstract PlaylistExtractor getPlaylistExtractor(
+    ListLinkHandler linkHandler
+) throws ExtractionException;
+
+// Search extraction
+public abstract SearchExtractor getSearchExtractor(
+    SearchQueryHandler queryHandler
+) throws ExtractionException;
+```
+
+### Convenience Overloads
+
+Simplified methods that accept URLs directly:
+
+```java
+// From URL
+public StreamExtractor getStreamExtractor(String url) 
+        throws ExtractionException {
+    return getStreamExtractor(getStreamLHFactory().fromUrl(url));
+}
+
+public ChannelExtractor getChannelExtractor(String url) 
+        throws ExtractionException {
+    return getChannelExtractor(getChannelLHFactory().fromUrl(url));
+}
+
+// From search query
+public SearchExtractor getSearchExtractor(String query) 
+        throws ExtractionException {
+    return getSearchExtractor(getSearchQHFactory().fromQuery(query));
+}
+```
+
+### With Filters and Sorting
+
+```java
+// Channel with content filters
+public ChannelExtractor getChannelExtractor(
+    String id,
+    List<String> contentFilter,
+    String sortFilter
+) throws ExtractionException {
+    return getChannelExtractor(
+        getChannelLHFactory().fromQuery(id, contentFilter, sortFilter)
+    );
+}
+
+// Search with filters
+public SearchExtractor getSearchExtractor(
+    String query,
+    List<String> contentFilter,
+    String sortFilter
+) throws ExtractionException {
+    return getSearchExtractor(
+        getSearchQHFactory().fromQuery(query, contentFilter, sortFilter)
+    );
+}
+```
+
+## Kiosk Support
+
+Kiosks represent curated content sections like "Trending" or "Featured":
+
+```java
+public abstract KioskList getKioskList() throws ExtractionException;
+```
+
+### YouTube Kiosk Example
+
+```java
+@Override
+public KioskList getKioskList() throws ExtractionException {
+    KioskList list = new KioskList(this);
+    
+    // Add trending videos kiosk
+    list.addKioskEntry(
+        (service, url, id) -> new YoutubeTrendingExtractor(
+            this, 
+            trendingLHFactory.fromUrl(url), 
+            id
+        ),
+        YoutubeTrendingLinkHandlerFactory.INSTANCE,
+        "Trending"
+    );
+    
+    // Add live streams kiosk
+    list.addKioskEntry(
+        (service, url, id) -> new YoutubeLiveExtractor(
+            this,
+            liveLHFactory.fromUrl(url),
+            id
+        ),
+        YoutubeLiveLinkHandlerFactory.INSTANCE,
+        "Live"
+    );
+    
+    list.setDefaultKiosk("Live");
+    return list;
+}
+```
+
+## Localization
+
+Services define supported languages and regions:
+
+```java
+// Supported localizations
+public List<Localization> getSupportedLocalizations() {
+    return Collections.singletonList(Localization.DEFAULT);
+}
+
+// Supported content countries
+public List<ContentCountry> getSupportedCountries() {
+    return Collections.singletonList(ContentCountry.DEFAULT);
+}
+
+// Get active localization based on user preference
+public Localization getLocalization() {
+    Localization preferred = NewPipe.getPreferredLocalization();
+    
+    // Check exact match
+    if (getSupportedLocalizations().contains(preferred)) {
+        return preferred;
+    }
+    
+    // Fallback to language code only
+    for (Localization supported : getSupportedLocalizations()) {
+        if (supported.getLanguageCode().equals(
+                preferred.getLanguageCode())) {
+            return supported;
+        }
+    }
+    
+    return Localization.DEFAULT;
+}
+```
+
+### YouTube Localization Example
+
+```java
+private static final List<Localization> SUPPORTED_LANGUAGES = 
+    Localization.listFrom(
+        "af", "am", "ar", "az", "be", "bg", "bn", "bs", "ca", "cs",
+        "da", "de", "el", "en", "en-GB", "es", "es-419", "es-US",
+        "et", "eu", "fa", "fi", "fil", "fr", "fr-CA"
+        // ... more languages
+    );
+
+private static final List<ContentCountry> SUPPORTED_COUNTRIES = 
+    ContentCountry.listFrom(
+        "DZ", "AR", "AU", "AT", "AZ", "BH", "BD", "BY", "BE", "BO",
+        "BA", "BR", "BG", "KH", "CA", "CL", "CO", "CR", "HR", "CY"
+        // ... more countries
+    );
+```
+
+## Feed Extraction
+
+Optional support for lightweight feed extraction:
+
+```java
+@Nullable
+public FeedExtractor getFeedExtractor(String url) 
+        throws ExtractionException {
+    return null;  // Override if feed support exists
+}
+```
+
+<Note>
+Feeds are optimized endpoints for fetching channel updates. Return `null` if the service doesn't provide a dedicated feed API.
+</Note>
+
+## Service Registry
+
+All services are registered in `ServiceList`:
+
+```java
+public static List<StreamingService> getServices() {
+    return ServiceList.all();
+}
+
+public static StreamingService getService(int serviceId) 
+        throws ExtractionException {
+    return ServiceList.all().stream()
+        .filter(service -> service.getServiceId() == serviceId)
+        .findFirst()
+        .orElseThrow(() -> new ExtractionException(
+            "There's no service with the id = \"" + serviceId + "\""
+        ));
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Singleton Factories">
+    Link handler factories should be singletons to avoid unnecessary instantiation:
+    
+    ```java
+    public LinkHandlerFactory getStreamLHFactory() {
+        return YoutubeStreamLinkHandlerFactory.getInstance();
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Validate Media Capabilities">
+    Declare only capabilities your service actually supports:
+    
+    ```java
+    // If service doesn't support comments
+    super(id, "MyService", EnumSet.of(AUDIO, VIDEO));
+    // Don't include COMMENTS capability
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle Null Returns Gracefully">
+    Some methods may return `null` for unsupported features:
+    
+    ```java
+    @Override
+    public ListLinkHandlerFactory getCommentsLHFactory() {
+        return null;  // If comments not supported
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Implement Service-Specific Logic">
+    Use conditional logic for platform-specific features:
+    
+    ```java
+    @Override
+    public PlaylistExtractor getPlaylistExtractor(
+            ListLinkHandler linkHandler) {
+        if (isSpecialMixPlaylist(linkHandler.getId())) {
+            return new SpecialMixExtractor(this, linkHandler);
+        }
+        return new RegularPlaylistExtractor(this, linkHandler);
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Documentation
+
+<CardGroup cols={3}>
+  <Card title="Extractors" icon="download" href="/core-concepts/extractors">
+    Learn about data extraction patterns
+  </Card>
+  <Card title="Link Handlers" icon="link" href="/core-concepts/link-handlers">
+    Understand URL parsing
+  </Card>
+  <Card title="Localization" icon="globe" href="/core-concepts/localization">
+    Configure language settings
+  </Card>
+</CardGroup>

@@ -1,0 +1,151 @@
+---
+title: Bandcamp Service
+description: Independent music platform support in NewPipe Extractor
+---
+
+Bandcamp is an independent music distribution platform supported by NewPipe Extractor, focusing on artist-direct music sales and streaming.
+
+## Media Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Audio Streams" icon="music">
+    Stream audio tracks from independent artists
+  </Card>
+  <Card title="Comments" icon="comments">
+    Read fan comments and discussions
+  </Card>
+  <Card title="No Video" icon="video-slash">
+    Bandcamp is audio-focused; video is not supported
+  </Card>
+  <Card title="No Live Streams" icon="tower-broadcast">
+    Live streaming is not available
+  </Card>
+</CardGroup>
+
+## Supported Features
+
+### Content Types
+
+- **Tracks**: Individual songs with full metadata
+- **Albums**: Full album releases with multiple tracks
+- **EPs**: Extended play releases
+- **Singles**: Single track releases
+- **Compilations**: Curated track collections
+
+### Artists and Labels
+
+- Artist profile pages
+- Label pages with catalog listings
+- Discography browsing
+- Artist descriptions and information
+- Channel tabs for content organization
+
+### Playlists and Albums
+
+- Album track listings
+- Artist discographies
+- Label catalogs
+- Track ordering and metadata
+
+### Search
+
+- Search across tracks, albums, and artists
+- Search suggestions for discovery
+- Content filtering by type
+
+### Kiosks (Discovery)
+
+Bandcamp offers curated discovery feeds:
+
+- **Featured**: Editorial picks and featured releases (default kiosk)
+- **Radio**: Bandcamp Radio shows and episodes
+
+<Info>
+Bandcamp's featured content showcases hand-picked releases from the editorial team, providing quality music discovery.
+</Info>
+
+## Special Features
+
+### Bandcamp Radio
+
+The service includes special support for Bandcamp Radio:
+
+- Radio show episodes and archives
+- Curated music selections
+- Special radio stream extraction via `BandcampRadioStreamExtractor`
+
+<Note>
+Radio URLs are detected automatically and use a specialized extractor for proper handling.
+</Note>
+
+### Comments System
+
+Bandcamp's fan-focused comment system:
+
+- Fan reviews and feedback
+- Artist responses to fans
+- Community discussions on releases
+
+### Track Metadata
+
+- High-quality audio information
+- Lyrics (when provided by artists)
+- Credits and liner notes
+- Release dates and catalog numbers
+- Pricing and purchase information
+
+## Technical Details
+
+**Base URL**: `https://bandcamp.com`
+
+**Service ID**: 4
+
+**Link Handler Factories**:
+- Stream: `BandcampStreamLinkHandlerFactory`
+- Channel: `BandcampChannelLinkHandlerFactory`
+- Playlist: `BandcampPlaylistLinkHandlerFactory`
+- Comments: `BandcampCommentsLinkHandlerFactory`
+- Featured: `BandcampFeaturedLinkHandlerFactory`
+
+**Special Extractors**:
+- Regular tracks: `BandcampStreamExtractor`
+- Radio streams: `BandcampRadioStreamExtractor`
+
+## Limitations
+
+<Note>
+Bandcamp support has certain limitations:
+
+- No video content support (audio-only platform)
+- No live streaming capabilities
+- Subscription extraction is not available
+- Some premium or paid content may have restricted access
+- Download availability depends on artist settings
+</Note>
+
+## Platform Features
+
+### Artist-First Platform
+
+Bandcamp's unique features reflected in the extractor:
+
+- Direct artist support through sales
+- "Name your price" releases
+- Free streaming with optional purchases
+- Artist-controlled release dates
+
+### Discovery Tools
+
+- Genre and tag-based browsing
+- Featured content curation
+- Radio show recommendations
+- Related artist suggestions
+
+## Use Cases
+
+- Independent music discovery
+- Artist catalog browsing
+- Album streaming and preview
+- Bandcamp Radio listening
+- Music collection management
+- Artist and label research

@@ -1,0 +1,319 @@
+---
+title: ChannelExtractor
+description: API reference for ChannelExtractor class - extracts channel/creator information
+---
+
+## Overview
+
+The `ChannelExtractor` class extracts information about channels or content creators from streaming services. It extends the base `Extractor` class and provides methods to retrieve channel metadata, avatars, banners, and available tabs.
+
+**Package:** `org.schabi.newpipe.extractor.channel`
+
+**Extends:** `Extractor`
+
+## Constructor
+
+<ParamField path="service" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The list link handler containing URL information for this channel
+</ParamField>
+
+## Constants
+
+<ResponseField name="UNKNOWN_SUBSCRIBER_COUNT" type="long" default="-1">
+  Constant returned when subscriber count is unavailable
+</ResponseField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId() throws ParsingException
+```
+
+Returns the unique identifier for this channel.
+
+<ResponseField name="return" type="String">
+  The channel's unique ID
+</ResponseField>
+
+### getName()
+
+```java
+public abstract String getName() throws ParsingException
+```
+
+Returns the name of the channel.
+
+<ResponseField name="return" type="String">
+  The channel's name
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the cleaned URL for this channel.
+
+<ResponseField name="return" type="String">
+  The channel's URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided by the user.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the channel page content. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## Channel Information Methods
+
+### getAvatars()
+
+```java
+public abstract List<Image> getAvatars() throws ParsingException
+```
+
+Returns the channel's profile pictures/avatars.
+
+<ResponseField name="return" type="List<Image>">
+  List of avatar images in various resolutions
+</ResponseField>
+
+### getBanners()
+
+```java
+public abstract List<Image> getBanners() throws ParsingException
+```
+
+Returns the channel's banner images.
+
+<ResponseField name="return" type="List<Image>">
+  List of banner images in various resolutions
+</ResponseField>
+
+### getDescription()
+
+```java
+public abstract String getDescription() throws ParsingException
+```
+
+Returns the channel description.
+
+<ResponseField name="return" type="String">
+  The channel's description text
+</ResponseField>
+
+### getSubscriberCount()
+
+```java
+public abstract long getSubscriberCount() throws ParsingException
+```
+
+Returns the number of subscribers.
+
+<ResponseField name="return" type="long">
+  Subscriber count, or `UNKNOWN_SUBSCRIBER_COUNT` (-1) if unavailable
+</ResponseField>
+
+### isVerified()
+
+```java
+public abstract boolean isVerified() throws ParsingException
+```
+
+Returns whether the channel is verified by the service provider.
+
+<ResponseField name="return" type="boolean">
+  `true` if the channel is verified, `false` otherwise
+</ResponseField>
+
+### getFeedUrl()
+
+```java
+public abstract String getFeedUrl() throws ParsingException
+```
+
+Returns the RSS/Atom feed URL for the channel.
+
+<ResponseField name="return" type="String">
+  The feed URL, or empty string if unavailable
+</ResponseField>
+
+### getTags()
+
+```java
+public List<String> getTags() throws ParsingException
+```
+
+Returns the channel's tags.
+
+<ResponseField name="return" type="List<String>">
+  List of tag strings, or empty list if unavailable
+</ResponseField>
+
+## Parent Channel Methods
+
+### getParentChannelName()
+
+```java
+public abstract String getParentChannelName() throws ParsingException
+```
+
+Returns the name of the parent channel (if this is a sub-channel).
+
+<ResponseField name="return" type="String">
+  Parent channel name, or empty string if not applicable
+</ResponseField>
+
+### getParentChannelUrl()
+
+```java
+public abstract String getParentChannelUrl() throws ParsingException
+```
+
+Returns the URL of the parent channel.
+
+<ResponseField name="return" type="String">
+  Parent channel URL, or empty string if not applicable
+</ResponseField>
+
+### getParentChannelAvatars()
+
+```java
+public abstract List<Image> getParentChannelAvatars() throws ParsingException
+```
+
+Returns the parent channel's avatar images.
+
+<ResponseField name="return" type="List<Image>">
+  List of parent channel avatars, or empty list if not applicable
+</ResponseField>
+
+## Tab Navigation Methods
+
+### getTabs()
+
+```java
+public abstract List<ListLinkHandler> getTabs() throws ParsingException
+```
+
+Returns the available tabs for the channel (e.g., Videos, Playlists, Community).
+
+<ResponseField name="return" type="List<ListLinkHandler>">
+  List of tab link handlers representing available channel sections
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+ChannelExtractor extractor = service.getChannelExtractor("https://youtube.com/c/ChannelName");
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Get channel information
+String name = extractor.getName();
+String description = extractor.getDescription();
+long subscribers = extractor.getSubscriberCount();
+boolean verified = extractor.isVerified();
+
+// Get images
+List<Image> avatars = extractor.getAvatars();
+List<Image> banners = extractor.getBanners();
+
+// Get available tabs
+List<ListLinkHandler> tabs = extractor.getTabs();
+for (ListLinkHandler tab : tabs) {
+    System.out.println("Tab: " + tab.getContentFilters());
+}
+```
+
+## Notes
+
+- Always call `fetchPage()` before accessing any channel data
+- The `getTabs()` method returns link handlers that can be used with `ChannelTabExtractor` to retrieve tab contents
+- Some services may not support all features (e.g., parent channels, tags, feed URLs)
+- Image lists typically contain multiple resolutions of the same image

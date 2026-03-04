@@ -1,0 +1,301 @@
+---
+title: LinkHandlerFactory
+description: Base factory class for creating LinkHandler instances
+---
+
+The `LinkHandlerFactory` is the base abstract class for creating `LinkHandler` instances from URLs or IDs. It provides the core functionality for parsing URLs, extracting IDs, and validating URL acceptance.
+
+## Class Overview
+
+```java
+public abstract class LinkHandlerFactory
+```
+
+This class serves as the foundation for all link handler factories in NewPipe Extractor. Implementations must provide service-specific logic for URL parsing and ID extraction.
+
+## Abstract Methods (Must Override)
+
+These methods must be implemented by concrete factory classes:
+
+<ParamField path="getId" type="String getId(String url)">
+  Extract the resource ID from a URL.
+
+  **Parameters:**
+  - `url` (String) - The URL to extract the ID from
+
+  **Returns:** String - The extracted resource ID
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be parsed
+  - `UnsupportedOperationException` - If ID extraction is not supported
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String getId(String url) throws ParsingException {
+      return url.substring(url.lastIndexOf('/') + 1);
+  }
+  ```
+</ParamField>
+
+<ParamField path="getUrl" type="String getUrl(String id)">
+  Construct a URL from a resource ID.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+
+  **Returns:** String - The constructed URL
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be constructed
+  - `UnsupportedOperationException` - If URL construction is not supported
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String getUrl(String id) throws ParsingException {
+      return "https://example.com/video/" + id;
+  }
+  ```
+</ParamField>
+
+<ParamField path="onAcceptUrl" type="boolean onAcceptUrl(String url)">
+  Determine if this factory can handle the given URL. This is the core validation method.
+
+  **Parameters:**
+  - `url` (String) - The URL to validate
+
+  **Returns:** boolean - `true` if this factory can handle the URL, `false` otherwise
+
+  **Throws:**
+  - `ParsingException` - If an error occurs during validation
+
+  **Example implementation:**
+  ```java
+  @Override
+  public boolean onAcceptUrl(String url) {
+      return url.contains("example.com/video/");
+  }
+  ```
+</ParamField>
+
+## Optional Methods
+
+<ParamField path="getUrl" type="String getUrl(String id, String baseUrl)">
+  Construct a URL from a resource ID and base URL. Override this if your service requires base URL context.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `baseUrl` (String) - The base URL for the service
+
+  **Returns:** String - The constructed URL
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be constructed
+  - `UnsupportedOperationException` - If URL construction is not supported
+
+  **Default behavior:** Calls `getUrl(id)` and ignores the base URL
+
+  ```java
+  public String getUrl(final String id, final String baseUrl)
+          throws ParsingException, UnsupportedOperationException {
+      return getUrl(id);
+  }
+  ```
+</ParamField>
+
+## Public Methods
+
+<ResponseField name="fromUrl" type="LinkHandler fromUrl(String url)">
+  Build a LinkHandler from a URL. This is the primary method for parsing URLs.
+
+  **Parameters:**
+  - `url` (String) - The URL to parse. Must not be null or empty.
+
+  **Returns:** LinkHandler - Complete LinkHandler with original URL, normalized URL, and extracted ID
+
+  **Throws:**
+  - `IllegalArgumentException` - If URL is null or empty
+  - `ParsingException` - If URL cannot be parsed or is not accepted
+
+  **Behavior:**
+  1. Validates that URL is not null or empty
+  2. Follows Google redirects if present using `Utils.followGoogleRedirectIfNeeded()`
+  3. Extracts base URL
+  4. Calls `fromUrl(url, baseUrl)` with both values
+
+  **Usage:**
+  ```java
+  LinkHandler handler = factory.fromUrl("https://youtube.com/watch?v=dQw4w9WgXcQ");
+  String id = handler.getId(); // "dQw4w9WgXcQ"
+  ```
+</ResponseField>
+
+<ResponseField name="fromUrl" type="LinkHandler fromUrl(String url, String baseUrl)">
+  Build a LinkHandler from a URL and base URL. The URL should already be polished (no Google redirects).
+
+  **Parameters:**
+  - `url` (String) - The URL without Google redirects. Must not be null.
+  - `baseUrl` (String) - The base URL extracted from the polished URL
+
+  **Returns:** LinkHandler - Complete LinkHandler instance
+
+  **Throws:**
+  - `NullPointerException` - If URL is null
+  - `ParsingException` - If URL is not accepted or cannot be parsed
+
+  **Behavior:**
+  1. Validates URL via `acceptUrl()`
+  2. Extracts ID using `getId(url)`
+  3. Constructs normalized URL using `getUrl(id, baseUrl)`
+  4. Creates LinkHandler with original URL, normalized URL, and ID
+
+  **Note:** Do NOT call `Utils.followGoogleRedirectIfNeeded()` if overriding this method, as it should already be done in the single-parameter `fromUrl()` method.
+</ResponseField>
+
+<ResponseField name="fromId" type="LinkHandler fromId(String id)">
+  Build a LinkHandler from a resource ID.
+
+  **Parameters:**
+  - `id` (String) - The resource ID. Must not be null.
+
+  **Returns:** LinkHandler - Complete LinkHandler instance
+
+  **Throws:**
+  - `NullPointerException` - If ID is null
+  - `ParsingException` - If URL cannot be constructed from ID
+
+  **Behavior:**
+  1. Constructs URL from ID using `getUrl(id)`
+  2. Creates LinkHandler where both `originalUrl` and `url` are the same
+
+  **Usage:**
+  ```java
+  LinkHandler handler = factory.fromId("dQw4w9WgXcQ");
+  String url = handler.getUrl(); // "https://youtube.com/watch?v=dQw4w9WgXcQ"
+  ```
+</ResponseField>
+
+<ResponseField name="fromId" type="LinkHandler fromId(String id, String baseUrl)">
+  Build a LinkHandler from a resource ID and base URL.
+
+  **Parameters:**
+  - `id` (String) - The resource ID. Must not be null.
+  - `baseUrl` (String) - The base URL for the service
+
+  **Returns:** LinkHandler - Complete LinkHandler instance
+
+  **Throws:**
+  - `NullPointerException` - If ID is null
+  - `ParsingException` - If URL cannot be constructed from ID
+
+  **Behavior:**
+  1. Constructs URL from ID and base URL using `getUrl(id, baseUrl)`
+  2. Creates LinkHandler where both `originalUrl` and `url` are the same
+</ResponseField>
+
+<ResponseField name="acceptUrl" type="boolean acceptUrl(String url)">
+  Test if this factory can handle the given URL. Used for routing URLs to the correct service.
+
+  **Parameters:**
+  - `url` (String) - The URL to test
+
+  **Returns:** boolean - `true` if this factory accepts the URL
+
+  **Throws:**
+  - `ParsingException` - If an error occurs during validation
+
+  **Behavior:**
+  - Delegates to `onAcceptUrl(url)` for the actual validation logic
+  - When a VIEW_ACTION intent is caught, this determines if the URL should be handled by this service
+
+  **Usage:**
+  ```java
+  if (factory.acceptUrl("https://youtube.com/watch?v=abc")) {
+      LinkHandler handler = factory.fromUrl(url);
+      // Process the URL
+  }
+  ```
+</ResponseField>
+
+## LinkHandler Class
+
+The `LinkHandler` class is the result object created by factory methods:
+
+<ResponseField name="LinkHandler" type="class">
+  Immutable data class that holds URL and ID information.
+
+  **Constructors:**
+  ```java
+  public LinkHandler(String originalUrl, String url, String id)
+  public LinkHandler(LinkHandler handler) // Copy constructor
+  ```
+
+  **Fields:**
+  - `originalUrl` (String) - The URL as originally provided
+  - `url` (String) - The cleaned/normalized URL
+  - `id` (String) - The extracted resource ID
+
+  **Methods:**
+  - `String getOriginalUrl()` - Returns the original URL
+  - `String getUrl()` - Returns the normalized URL
+  - `String getId()` - Returns the resource ID
+  - `String getBaseUrl()` - Extracts and returns the base URL (throws ParsingException)
+
+  **Implements:** `Serializable` - Can be serialized for caching or persistence
+</ResponseField>
+
+## Implementation Example
+
+```java
+public class YoutubeVideoLinkHandlerFactory extends LinkHandlerFactory {
+    
+    private static final String ID_PATTERN = "([a-zA-Z0-9_-]{11})";
+    
+    @Override
+    public String getId(String url) throws ParsingException {
+        try {
+            URI uri = new URI(url);
+            String query = uri.getQuery();
+            
+            if (query != null) {
+                String[] params = query.split("&");
+                for (String param : params) {
+                    String[] pair = param.split("=");
+                    if (pair[0].equals("v")) {
+                        return pair[1];
+                    }
+                }
+            }
+            throw new ParsingException("Could not extract video ID");
+        } catch (Exception e) {
+            throw new ParsingException("Could not parse URL", e);
+        }
+    }
+    
+    @Override
+    public String getUrl(String id) throws ParsingException {
+        return "https://www.youtube.com/watch?v=" + id;
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        return url.contains("youtube.com/watch") || url.contains("youtu.be/");
+    }
+}
+```
+
+## Best Practices
+
+1. **Validate input**: Always validate URLs and IDs before processing
+2. **Handle Google redirects**: The framework handles this automatically in `fromUrl()`
+3. **Be specific in `onAcceptUrl()`**: Ensure your validation is precise to avoid conflicts
+4. **Throw meaningful exceptions**: Provide clear error messages in ParsingException
+5. **Consider base URLs**: Override `getUrl(id, baseUrl)` if your service uses different domains
+6. **Keep it stateless**: Factory instances should be stateless and reusable
+
+## See Also
+
+- [Link Handler System Overview](/api/link-handlers/overview)
+- [ListLinkHandlerFactory](/api/link-handlers/list-link-handler-factory) - For filtered lists
+- [SearchQueryHandlerFactory](/api/link-handlers/search-query-handler-factory) - For search queries

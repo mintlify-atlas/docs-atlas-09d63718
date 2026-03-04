@@ -1,0 +1,362 @@
+---
+title: 'Extracting Channel Data'
+description: 'Learn how to extract channel information including metadata, avatars, and tabs'
+---
+
+## Overview
+
+The `ChannelExtractor` and `ChannelInfo` classes provide access to channel/user information from supported streaming services. This includes channel metadata, subscriber counts, verification status, and available tabs.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Extract Channel Info">
+    Use `ChannelInfo.getInfo()` to extract channel information from a URL:
+
+    ```java
+    import org.schabi.newpipe.extractor.channel.ChannelInfo;
+    import org.schabi.newpipe.extractor.NewPipe;
+    
+    // Initialize NewPipe first
+    NewPipe.init(yourDownloader);
+    
+    try {
+        String channelUrl = "https://www.youtube.com/c/ChannelName";
+        ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+        
+        System.out.println("Channel: " + info.getName());
+        System.out.println("Subscribers: " + info.getSubscriberCount());
+        System.out.println("Description: " + info.getDescription());
+        System.out.println("Verified: " + info.isVerified());
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Access Channel Images">
+    Retrieve avatars and banners in multiple resolutions:
+
+    ```java
+    import org.schabi.newpipe.extractor.Image;
+    
+    ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+    
+    // Get channel avatars
+    List<Image> avatars = info.getAvatars();
+    for (Image avatar : avatars) {
+        System.out.println("Avatar URL: " + avatar.getUrl());
+        System.out.println("Size: " + avatar.getWidth() + "x" + 
+                         avatar.getHeight());
+    }
+    
+    // Get channel banners
+    List<Image> banners = info.getBanners();
+    for (Image banner : banners) {
+        System.out.println("Banner URL: " + banner.getUrl());
+    }
+    ```
+  </Step>
+
+  <Step title="Access Channel Tabs">
+    Get available tabs (videos, playlists, live, etc.):
+
+    ```java
+    import org.schabi.newpipe.extractor.linkhandler.ListLinkHandler;
+    
+    ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+    
+    List<ListLinkHandler> tabs = info.getTabs();
+    for (ListLinkHandler tab : tabs) {
+        System.out.println("Tab ID: " + tab.getContentFilters());
+        System.out.println("Tab URL: " + tab.getUrl());
+    }
+    ```
+  </Step>
+</Steps>
+
+## Channel Metadata
+
+Access comprehensive channel information:
+
+<CodeGroup>
+```java Basic Information
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+
+// Channel identity
+String channelId = info.getId();
+String channelName = info.getName();
+String channelUrl = info.getUrl();
+String originalUrl = info.getOriginalUrl();
+
+// Subscriber count
+long subscribers = info.getSubscriberCount();
+if (subscribers == -1) {
+    System.out.println("Subscriber count unavailable");
+} else {
+    System.out.println("Subscribers: " + subscribers);
+}
+
+// Verification status
+boolean verified = info.isVerified();
+System.out.println("Verified: " + verified);
+```
+
+```java Description & Tags
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+
+// Channel description
+String description = info.getDescription();
+System.out.println("Description: " + description);
+
+// Channel tags
+List<String> tags = info.getTags();
+for (String tag : tags) {
+    System.out.println("Tag: " + tag);
+}
+```
+
+```java Parent Channel Info
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+
+// Some channels have parent channels (e.g., topic channels)
+String parentName = info.getParentChannelName();
+String parentUrl = info.getParentChannelUrl();
+
+if (parentUrl != null && !parentUrl.isEmpty()) {
+    System.out.println("Parent Channel: " + parentName);
+    System.out.println("Parent URL: " + parentUrl);
+    
+    List<Image> parentAvatars = info.getParentChannelAvatars();
+    for (Image avatar : parentAvatars) {
+        System.out.println("Parent Avatar: " + avatar.getUrl());
+    }
+}
+```
+</CodeGroup>
+
+## Channel Tabs
+
+Channels can have multiple tabs with different content types:
+
+```java
+import org.schabi.newpipe.extractor.channel.tabs.ChannelTabExtractor;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+List<ListLinkHandler> tabs = info.getTabs();
+
+// Iterate through available tabs
+for (ListLinkHandler tabHandler : tabs) {
+    System.out.println("\n=== Tab: " + tabHandler.getContentFilters() + " ===");
+    
+    // Get the tab extractor
+    StreamingService service = NewPipe.getServiceByUrl(channelUrl);
+    ChannelTabExtractor tabExtractor = service.getChannelTabExtractor(tabHandler);
+    tabExtractor.fetchPage();
+    
+    // Get items from this tab
+    InfoItemsPage<InfoItem> page = tabExtractor.getInitialPage();
+    List<InfoItem> items = page.getItems();
+    
+    for (InfoItem item : items) {
+        if (item instanceof StreamInfoItem) {
+            StreamInfoItem stream = (StreamInfoItem) item;
+            System.out.println("Video: " + stream.getName());
+        }
+    }
+}
+```
+
+## Feed URL
+
+Get the RSS feed URL for the channel:
+
+```java
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+
+String feedUrl = info.getFeedUrl();
+if (feedUrl != null && !feedUrl.isEmpty()) {
+    System.out.println("RSS Feed: " + feedUrl);
+    // Use this URL to subscribe to channel updates
+}
+```
+
+## Working with Specific Services
+
+Extract channel info from a specific service:
+
+```java
+import org.schabi.newpipe.extractor.StreamingService;
+
+// Get YouTube service
+StreamingService youtube = NewPipe.getService("YouTube");
+
+// Extract channel info using the service
+ChannelInfo info = ChannelInfo.getInfo(youtube, channelUrl);
+
+System.out.println("Service: " + youtube.getServiceInfo().getName());
+System.out.println("Channel: " + info.getName());
+```
+
+## Error Handling
+
+<Warning>
+  Channel extraction can fail due to various reasons including terminated accounts, unavailable channels, or network issues.
+</Warning>
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+
+try {
+    ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+    
+    // Check for partial extraction errors
+    List<Throwable> errors = info.getErrors();
+    if (!errors.isEmpty()) {
+        System.out.println("Some fields failed to extract:");
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getMessage());
+        }
+    }
+    
+    // Use the extracted data
+    System.out.println("Channel: " + info.getName());
+    
+} catch (ContentNotAvailableException e) {
+    System.err.println("Channel not available: " + e.getMessage());
+} catch (AccountTerminatedException e) {
+    System.err.println("Channel account terminated");
+} catch (ExtractionException e) {
+    System.err.println("Extraction failed: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+## Using ChannelExtractor Directly
+
+For more control, use `ChannelExtractor` directly:
+
+```java
+import org.schabi.newpipe.extractor.channel.ChannelExtractor;
+
+StreamingService service = NewPipe.getServiceByUrl(channelUrl);
+ChannelExtractor extractor = service.getChannelExtractor(channelUrl);
+
+// Fetch the page
+extractor.fetchPage();
+
+// Extract individual fields
+String name = extractor.getName();
+long subscribers = extractor.getSubscriberCount();
+boolean verified = extractor.isVerified();
+List<Image> avatars = extractor.getAvatars();
+List<Image> banners = extractor.getBanners();
+String description = extractor.getDescription();
+
+System.out.println("Channel: " + name);
+System.out.println("Subscribers: " + subscribers);
+System.out.println("Verified: " + verified);
+```
+
+## Subscriber Count Handling
+
+<Tip>
+  Subscriber counts may not always be available. Check for the `UNKNOWN_SUBSCRIBER_COUNT` constant.
+</Tip>
+
+```java
+import org.schabi.newpipe.extractor.channel.ChannelExtractor;
+
+ChannelInfo info = ChannelInfo.getInfo(channelUrl);
+long subscriberCount = info.getSubscriberCount();
+
+if (subscriberCount == ChannelExtractor.UNKNOWN_SUBSCRIBER_COUNT) {
+    System.out.println("Subscriber count is hidden or unavailable");
+} else {
+    System.out.println("Subscribers: " + formatCount(subscriberCount));
+}
+
+private static String formatCount(long count) {
+    if (count >= 1_000_000) {
+        return (count / 1_000_000) + "M";
+    } else if (count >= 1_000) {
+        return (count / 1_000) + "K";
+    }
+    return String.valueOf(count);
+}
+```
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.channel.*;
+import org.schabi.newpipe.extractor.linkhandler.*;
+
+public class ChannelExtractorExample {
+    public static void main(String[] args) {
+        // Initialize
+        NewPipe.init(yourDownloader);
+        
+        try {
+            String url = "https://www.youtube.com/@ChannelHandle";
+            ChannelInfo info = ChannelInfo.getInfo(url);
+            
+            // Basic information
+            System.out.println("=== Channel Information ===");
+            System.out.println("Name: " + info.getName());
+            System.out.println("ID: " + info.getId());
+            System.out.println("URL: " + info.getUrl());
+            
+            // Stats
+            long subscribers = info.getSubscriberCount();
+            if (subscribers != -1) {
+                System.out.println("Subscribers: " + subscribers);
+            }
+            System.out.println("Verified: " + info.isVerified());
+            
+            // Description
+            String description = info.getDescription();
+            if (description != null && !description.isEmpty()) {
+                System.out.println("\nDescription:");
+                System.out.println(description.substring(0, 
+                    Math.min(200, description.length())) + "...");
+            }
+            
+            // Avatars
+            List<Image> avatars = info.getAvatars();
+            if (!avatars.isEmpty()) {
+                System.out.println("\nAvatars available: " + avatars.size());
+                Image bestAvatar = avatars.get(avatars.size() - 1);
+                System.out.println("Best quality: " + bestAvatar.getUrl());
+            }
+            
+            // Available tabs
+            List<ListLinkHandler> tabs = info.getTabs();
+            System.out.println("\nAvailable tabs: " + tabs.size());
+            for (ListLinkHandler tab : tabs) {
+                System.out.println("- " + tab.getContentFilters());
+            }
+            
+            // Feed URL
+            String feedUrl = info.getFeedUrl();
+            if (feedUrl != null && !feedUrl.isEmpty()) {
+                System.out.println("\nRSS Feed: " + feedUrl);
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Next Steps
+
+- Learn about [extracting playlist data](/guides/extracting-playlists)
+- Explore [stream extraction](/guides/extracting-streams)
+- Understand [error handling patterns](/guides/error-handling)

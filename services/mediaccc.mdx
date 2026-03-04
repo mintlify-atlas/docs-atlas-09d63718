@@ -1,0 +1,182 @@
+---
+title: media.ccc.de Service
+description: Conference recordings and tech talks from Chaos Computer Club
+---
+
+media.ccc.de is the streaming platform of the Chaos Computer Club (CCC), providing access to thousands of conference recordings, tech talks, and live streams from hacker conferences and events.
+
+## Media Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Audio Streams" icon="music">
+    Audio-only versions of conference recordings
+  </Card>
+  <Card title="Video Streams" icon="video">
+    Full video recordings of talks and presentations
+  </Card>
+  <Card title="Live Streams" icon="tower-broadcast">
+    Live conference streams during events
+  </Card>
+  <Card title="No Comments" icon="comments">
+    Comment system is not available
+  </Card>
+</CardGroup>
+
+## Supported Features
+
+### Content Types
+
+- **Conference Recordings**: Archived talks from past events
+- **Live Streams**: Real-time event coverage
+- **Lectures and Presentations**: Technical talks and workshops
+- **Keynotes**: Featured presentations from events
+
+### Conferences (Channels)
+
+Conferences serve as organizational units:
+
+- Conference information and metadata
+- Event schedules and descriptions
+- Talk listings by conference
+- Year-based organization
+- Conference logos and branding
+
+<Info>
+In media.ccc.de, "conferences" are similar to channels in other services - they group related content from specific events.
+</Info>
+
+### Live Stream Detection
+
+The service automatically identifies live streams:
+
+- Live stream IDs are detected via `MediaCCCParsingHelper.isLiveStreamId()`
+- Uses specialized `MediaCCCLiveStreamExtractor` for live content
+- Regular recordings use `MediaCCCStreamExtractor`
+
+### Search
+
+- Search across all recordings and talks
+- Find content by speaker, title, or topic
+- Conference-specific filtering
+
+### Kiosks (Discovery)
+
+media.ccc.de provides multiple discovery feeds:
+
+- **Conferences**: Browse all available conferences
+- **Recent**: Recently added recordings (default kiosk)
+- **Live**: Currently running live streams
+
+<Note>
+The default kiosk is "Recent" which showcases the latest conference recordings and talks.
+</Note>
+
+## Special Features
+
+### Live Event Coverage
+
+- Real-time streaming during conferences
+- Multiple simultaneous rooms/stages
+- Live stream detection and handling
+- Event schedules integration
+
+### Conference Organization
+
+Content is organized by conferences and events:
+
+- Congress events (annual)
+- Camp events (outdoor)
+- Regional conferences
+- Special events and meetups
+
+### Multi-Format Recordings
+
+- Multiple video qualities available
+- Audio-only versions for bandwidth saving
+- Downloadable formats
+- Subtitle support (when available)
+
+### Technical Content Focus
+
+- Hacker and security conferences
+- Technology and privacy talks
+- Open-source community presentations
+- Scientific and research content
+
+## Channel Tab Handling
+
+media.ccc.de has a simplified channel structure:
+
+- Single channel tab per conference
+- Channel tab shows all conference recordings
+- Uses `ReadyChannelTabListLinkHandler` for pre-fetched data
+- Falls back to `MediaCCCChannelTabExtractor` when needed
+
+## Technical Details
+
+**Base URL**: `https://media.ccc.de`
+
+**Service ID**: 2
+
+**Link Handler Factories**:
+- Stream: `MediaCCCStreamLinkHandlerFactory`
+- Channel/Conference: `MediaCCCConferenceLinkHandlerFactory`
+- Conferences List: `MediaCCCConferencesListLinkHandlerFactory`
+- Recent: `MediaCCCRecentListLinkHandlerFactory`
+- Live: `MediaCCCLiveListLinkHandlerFactory`
+
+**Special Extractors**:
+- Regular streams: `MediaCCCStreamExtractor`
+- Live streams: `MediaCCCLiveStreamExtractor`
+- Conference kiosk: `MediaCCCConferenceKiosk`
+- Recent kiosk: `MediaCCCRecentKiosk`
+- Live kiosk: `MediaCCCLiveStreamKiosk`
+
+## Limitations
+
+<Note>
+media.ccc.de support has some limitations:
+
+- No comment system (comments not supported)
+- No playlist support (returns null)
+- No subscription extraction (returns null)
+- No search suggestions (returns null)
+- Limited to CCC-related content
+- Primarily German and English language content
+</Note>
+
+## Platform Characteristics
+
+### Content Quality
+
+- Professional conference recordings
+- High-quality video and audio
+- Multi-language subtitles (where available)
+- Technical talk focus
+
+### Event Coverage
+
+Major events include:
+
+- **Chaos Communication Congress (CCC)**: Annual December event
+- **Chaos Communication Camp**: Outdoor hacker camp
+- **SIGINT**: Regional conferences
+- **DiVOC**: Remote/online events
+- Many community events and meetups
+
+### Archive Access
+
+- Extensive archive of past conferences
+- Decades of hacker culture history
+- Searchable talk database
+- Preserved recordings from historic events
+
+## Use Cases
+
+- Technical education and learning
+- Conference talk viewing
+- Security research and awareness
+- Open-source community engagement
+- Historical tech talk archives
+- Live event following during conferences
+- Privacy and hacker culture content

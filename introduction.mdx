@@ -1,0 +1,120 @@
+---
+title: NewPipe Extractor
+description: A powerful Java library for extracting data from streaming sites like YouTube, SoundCloud, and more
+---
+
+# NewPipe Extractor
+
+NewPipe Extractor is a library for extracting things from streaming sites. It is a core component of [NewPipe](https://github.com/TeamNewPipe/NewPipe), but can be used independently in any Java project.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running with NewPipe Extractor in minutes
+  </Card>
+  <Card title="Installation" icon="download" href="/installation">
+    Add NewPipe Extractor to your Gradle or Maven project
+  </Card>
+  <Card title="API Documentation" icon="code" href="https://teamnewpipe.github.io/NewPipeExtractor/javadoc/">
+    Complete JavaDoc reference for all classes and methods
+  </Card>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/TeamNewPipe/NewPipeExtractor">
+    View source code, report issues, and contribute
+  </Card>
+</CardGroup>
+
+## Overview
+
+NewPipe Extractor provides a unified interface to extract content from multiple streaming platforms without requiring their official APIs. The library handles all the complexity of parsing website data and provides a clean, type-safe Java API.
+
+### Key Features
+
+<CardGroup cols={2}>
+  <Card title="Multiple Services" icon="globe">
+    Extract data from YouTube, SoundCloud, media.ccc.de, PeerTube, and Bandcamp with a single API
+  </Card>
+  <Card title="No API Keys Required" icon="key">
+    Works without official API keys or authentication
+  </Card>
+  <Card title="Rich Metadata" icon="database">
+    Extract video/audio streams, metadata, thumbnails, descriptions, and more
+  </Card>
+  <Card title="Type-Safe API" icon="shield">
+    Fully typed Java interfaces with comprehensive error handling
+  </Card>
+  <Card title="Localization Support" icon="language">
+    Request content in different languages and regions
+  </Card>
+  <Card title="Open Source" icon="code-branch">
+    Licensed under GPLv3, free to use and modify
+  </Card>
+</CardGroup>
+
+## Supported Platforms
+
+The following streaming services are currently supported:
+
+| Service | ID | Features |
+|---------|----|-----------|
+| **YouTube** | 0 | Videos, playlists, channels, search, comments |
+| **SoundCloud** | 1 | Tracks, playlists, user profiles, search |
+| **media.ccc.de** | 2 | Conference videos and live streams |
+| **PeerTube** | 3 | Federated video platform support |
+| **Bandcamp** | 4 | Music tracks and albums |
+
+<Note>
+  Each service is implemented as a `StreamingService` in the library and can be accessed through the `ServiceList` class.
+</Note>
+
+## Common Use Cases
+
+### Stream Information Extraction
+Extract detailed information about videos or audio streams, including:
+- Title, description, and uploader information
+- Available stream qualities and formats
+- Thumbnails and preview images
+- Duration, view count, and upload date
+
+### Search Functionality
+Search across supported platforms and retrieve results with metadata:
+- Video and channel search results
+- Search suggestions and autocomplete
+- Filtered search by content type
+
+### Playlist and Channel Data
+Retrieve collections of content:
+- Playlist items and metadata
+- Channel/user uploads
+- Trending and recommended content
+
+### Comments and Interactions
+Access user-generated content:
+- Comment threads and replies
+- Like counts and interaction metrics
+
+## Example
+
+Here's a quick example of extracting stream information from a YouTube URL:
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+
+// Initialize NewPipe with a downloader implementation
+NewPipe.init(yourDownloaderInstance);
+
+// Extract stream information
+StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+
+// Access the extracted data
+System.out.println("Title: " + info.getName());
+System.out.println("Uploader: " + info.getUploaderName());
+System.out.println("Duration: " + info.getDuration() + " seconds");
+```
+
+<Card title="Next Steps" icon="arrow-right" href="/installation">
+  Ready to get started? Check out the installation guide to add NewPipe Extractor to your project.
+</Card>
+
+## License
+
+NewPipe Extractor is Free Software: You can use, study, share and improve it at your will. Specifically you can redistribute and/or modify it under the terms of the [GNU General Public License](https://www.gnu.org/licenses/gpl.html) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.

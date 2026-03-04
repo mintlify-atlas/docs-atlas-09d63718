@@ -1,80 +1,499 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get up and running with NewPipe Extractor in minutes
 ---
 
-## Get started in three steps
+# Quick Start
 
-Get your documentation site running locally and make your first customization.
+This guide will help you start extracting data from YouTube, SoundCloud, Bandcamp, and other streaming services in just a few minutes.
 
-### Step 1: Set up your local environment
+## Overview
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before you can extract any data, you need to:
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+1. Install NewPipe Extractor in your project
+2. Implement a `Downloader` class for making HTTP requests
+3. Initialize NewPipe with your downloader
+4. Start extracting data from URLs
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  If you haven't added NewPipe Extractor to your project yet, check the [Installation Guide](/installation) first.
 </Note>
+
+## Step-by-Step Guide
+
+<Steps>
+  <Step title="Implement a Downloader">
+    NewPipe requires a `Downloader` implementation to fetch web pages. Here's a complete implementation using OkHttp:
+
+    ```java DownloaderImpl.java
+    import org.schabi.newpipe.extractor.downloader.Downloader;
+    import org.schabi.newpipe.extractor.downloader.Request;
+    import org.schabi.newpipe.extractor.downloader.Response;
+    import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+
+    import java.io.IOException;
+    import java.util.List;
+    import java.util.Map;
+    import java.util.concurrent.TimeUnit;
+
+    import okhttp3.ConnectionSpec;
+    import okhttp3.OkHttpClient;
+    import okhttp3.RequestBody;
+    import okhttp3.ResponseBody;
+
+    public class DownloaderImpl extends Downloader {
+        private static final String USER_AGENT = 
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0";
+        
+        private final OkHttpClient client;
+
+        public DownloaderImpl() {
+            this.client = new OkHttpClient.Builder()
+                .readTimeout(30, TimeUnit.SECONDS)
+                // Required for certain services like Bandcamp
+                .connectionSpecs(List.of(ConnectionSpec.RESTRICTED_TLS))
+                .build();
+        }
+
+        @Override
+        public Response execute(Request request) throws IOException, ReCaptchaException {
+            final String httpMethod = request.httpMethod();
+            final String url = request.url();
+            final Map<String, List<String>> headers = request.headers();
+            final byte[] dataToSend = request.dataToSend();
+
+            RequestBody requestBody = null;
+            if (dataToSend != null) {
+                requestBody = RequestBody.create(dataToSend);
+            }
+
+            final okhttp3.Request.Builder requestBuilder = new okhttp3.Request.Builder()
+                .method(httpMethod, requestBody)
+                .url(url)
+                .addHeader("User-Agent", USER_AGENT);
+
+            headers.forEach((headerName, headerValueList) -> {
+                requestBuilder.removeHeader(headerName);
+                headerValueList.forEach(headerValue ->
+                    requestBuilder.addHeader(headerName, headerValue));
+            });
+
+            try (okhttp3.Response response = client.newCall(requestBuilder.build()).execute()) {
+                if (response.code() == 429) {
+                    throw new ReCaptchaException("reCaptcha Challenge requested", url);
+                }
+
+                String responseBodyToReturn = null;
+                try (ResponseBody body = response.body()) {
+                    if (body != null) {
+                        responseBodyToReturn = body.string();
+                    }
+                }
+
+                return new Response(
+                    response.code(),
+                    response.message(),
+                    response.headers().toMultimap(),
+                    responseBodyToReturn,
+                    response.request().url().toString());
+            }
+        }
+    }
+    ```
+
+    <Tip>
+      Don't forget to add OkHttp to your project dependencies: `implementation("com.squareup.okhttp3:okhttp:4.12.0")`
+    </Tip>
+  </Step>
+
+  <Step title="Initialize NewPipe">
+    Before extracting any data, initialize NewPipe with your downloader implementation:
+
+    ```java
+    import org.schabi.newpipe.extractor.NewPipe;
+    import org.schabi.newpipe.extractor.localization.Localization;
+    import org.schabi.newpipe.extractor.localization.ContentCountry;
+
+    // Basic initialization
+    NewPipe.init(new DownloaderImpl());
+
+    // Or with localization (optional)
+    NewPipe.init(
+        new DownloaderImpl(),
+        Localization.fromLocale(Locale.US),
+        new ContentCountry("US")
+    );
+    ```
+
+    <Note>
+      You only need to initialize NewPipe once in your application lifecycle, typically at startup.
+    </Note>
+  </Step>
+
+  <Step title="Extract Your First Stream">
+    Now you can extract information from any supported URL:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.StreamInfo;
+
+    try {
+        // Extract stream information
+        String url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        StreamInfo info = StreamInfo.getInfo(url);
+
+        // Access basic metadata
+        System.out.println("Title: " + info.getName());
+        System.out.println("Uploader: " + info.getUploaderName());
+        System.out.println("Duration: " + info.getDuration() + " seconds");
+        System.out.println("Views: " + info.getViewCount());
+        System.out.println("Likes: " + info.getLikeCount());
+
+        // Get description
+        System.out.println("Description: " + info.getDescription().getContent());
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Access Stream URLs">
+    Extract playable audio and video stream URLs:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.AudioStream;
+    import org.schabi.newpipe.extractor.stream.VideoStream;
+
+    StreamInfo info = StreamInfo.getInfo(url);
+
+    // Get audio streams
+    List<AudioStream> audioStreams = info.getAudioStreams();
+    if (!audioStreams.isEmpty()) {
+        AudioStream bestAudio = audioStreams.get(0);
+        System.out.println("Audio URL: " + bestAudio.getContent());
+        System.out.println("Format: " + bestAudio.getFormat());
+        System.out.println("Bitrate: " + bestAudio.getAverageBitrate() + " kbps");
+    }
+
+    // Get video streams (with audio)
+    List<VideoStream> videoStreams = info.getVideoStreams();
+    if (!videoStreams.isEmpty()) {
+        VideoStream bestVideo = videoStreams.get(0);
+        System.out.println("Video URL: " + bestVideo.getContent());
+        System.out.println("Resolution: " + bestVideo.getResolution());
+        System.out.println("Format: " + bestVideo.getFormat());
+    }
+
+    // Get video-only streams (no audio, for DASH)
+    List<VideoStream> videoOnlyStreams = info.getVideoOnlyStreams();
+    for (VideoStream stream : videoOnlyStreams) {
+        System.out.println("Video Only: " + stream.getResolution() + 
+                         " - " + stream.getFormat());
+    }
+    ```
+  </Step>
+</Steps>
+
+## Complete Examples
+
+### YouTube Video Extraction
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.Image;
+
+public class YouTubeExample {
+    public static void main(String[] args) {
+        // Initialize NewPipe
+        NewPipe.init(new DownloaderImpl());
+
+        try {
+            String url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+            StreamInfo info = StreamInfo.getInfo(url);
+
+            // Basic information
+            System.out.println("=== Video Information ===");
+            System.out.println("Title: " + info.getName());
+            System.out.println("Uploader: " + info.getUploaderName());
+            System.out.println("Uploader URL: " + info.getUploaderUrl());
+            System.out.println("Verified: " + info.isUploaderVerified());
+            System.out.println("Subscribers: " + info.getUploaderSubscriberCount());
+
+            // Statistics
+            System.out.println("\n=== Statistics ===");
+            System.out.println("Duration: " + info.getDuration() + " seconds");
+            System.out.println("Views: " + info.getViewCount());
+            System.out.println("Likes: " + info.getLikeCount());
+            System.out.println("Upload Date: " + info.getTextualUploadDate());
+
+            // Thumbnails
+            System.out.println("\n=== Thumbnails ===");
+            List<Image> thumbnails = info.getThumbnails();
+            for (Image thumbnail : thumbnails) {
+                System.out.println("Thumbnail: " + thumbnail.getUrl() + 
+                                 " (" + thumbnail.getWidth() + "x" + 
+                                 thumbnail.getHeight() + ")");
+            }
+
+            // Streams
+            System.out.println("\n=== Available Streams ===");
+            System.out.println("Audio streams: " + info.getAudioStreams().size());
+            System.out.println("Video streams: " + info.getVideoStreams().size());
+            System.out.println("Video-only streams: " + info.getVideoOnlyStreams().size());
+
+            // Tags and metadata
+            System.out.println("\n=== Metadata ===");
+            System.out.println("Category: " + info.getCategory());
+            System.out.println("Tags: " + String.join(", ", info.getTags()));
+            System.out.println("Age limit: " + info.getAgeLimit());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### SoundCloud Track Extraction
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+import org.schabi.newpipe.extractor.stream.StreamType;
+
+public class SoundCloudExample {
+    public static void main(String[] args) {
+        NewPipe.init(new DownloaderImpl());
+
+        try {
+            String url = "https://soundcloud.com/example-artist/example-track";
+            StreamInfo info = StreamInfo.getInfo(url);
+
+            // Check stream type
+            if (info.getStreamType() == StreamType.AUDIO_STREAM) {
+                System.out.println("=== Audio Track ===");
+                System.out.println("Title: " + info.getName());
+                System.out.println("Artist: " + info.getUploaderName());
+                System.out.println("Duration: " + info.getDuration() + " seconds");
+                System.out.println("Plays: " + info.getViewCount());
+
+                // Get audio stream URL
+                if (!info.getAudioStreams().isEmpty()) {
+                    String audioUrl = info.getAudioStreams().get(0).getContent();
+                    System.out.println("Stream URL: " + audioUrl);
+                }
+
+                // Get artwork
+                if (!info.getThumbnails().isEmpty()) {
+                    String artworkUrl = info.getThumbnails().get(0).getUrl();
+                    System.out.println("Artwork: " + artworkUrl);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### Bandcamp Track Extraction
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+
+public class BandcampExample {
+    public static void main(String[] args) {
+        NewPipe.init(new DownloaderImpl());
+
+        try {
+            String url = "https://example.bandcamp.com/track/example-song";
+            StreamInfo info = StreamInfo.getInfo(url);
+
+            System.out.println("=== Bandcamp Track ===");
+            System.out.println("Title: " + info.getName());
+            System.out.println("Artist: " + info.getUploaderName());
+            System.out.println("Duration: " + info.getDuration() + " seconds");
+            System.out.println("Description: " + info.getDescription().getContent());
+
+            // License information
+            System.out.println("License: " + info.getLicence());
+
+            // Get audio stream
+            if (!info.getAudioStreams().isEmpty()) {
+                System.out.println("Available in " + info.getAudioStreams().size() + 
+                                 " quality levels");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Service Selection
+
+You can extract from specific services or let NewPipe auto-detect:
+
+<CodeGroup>
+```java Auto-Detection
+// NewPipe automatically detects the service from the URL
+StreamInfo info = StreamInfo.getInfo("https://www.youtube.com/watch?v=VIDEO_ID");
+```
+
+```java Explicit Service
+import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.ServiceList;
+
+// Get service by name
+StreamingService youtube = ServiceList.YouTube;
+StreamInfo info = StreamInfo.getInfo(youtube, videoUrl);
+
+// Or use NewPipe.getService()
+StreamingService service = NewPipe.getService("YouTube");
+StreamInfo info2 = StreamInfo.getInfo(service, videoUrl);
+```
+
+```java By Service ID
+// Services have numeric IDs:
+// YouTube = 0, SoundCloud = 1, MediaCCC = 2, PeerTube = 3, Bandcamp = 4
+StreamingService service = NewPipe.getService(0); // YouTube
+StreamInfo info = StreamInfo.getInfo(service, videoUrl);
+```
+
+```java Get Service from URL
+// Automatically determine which service handles a URL
+StreamingService service = NewPipe.getServiceByUrl(url);
+System.out.println("Service: " + service.getServiceInfo().getName());
+StreamInfo info = StreamInfo.getInfo(service, url);
+```
+</CodeGroup>
+
+## Localization Configuration
+
+Configure language and region preferences:
+
+```java
+import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
+import java.util.Locale;
+
+// Initialize with localization
+NewPipe.init(
+    new DownloaderImpl(),
+    Localization.fromLocale(Locale.GERMANY),
+    new ContentCountry("DE")
+);
+
+// Or update localization after initialization
+NewPipe.setupLocalization(
+    Localization.fromLocale(Locale.FRANCE),
+    new ContentCountry("FR")
+);
+
+// Get current localization settings
+Localization currentLocale = NewPipe.getPreferredLocalization();
+ContentCountry currentCountry = NewPipe.getPreferredContentCountry();
+
+System.out.println("Language: " + currentLocale.getLanguageCode());
+System.out.println("Country: " + currentCountry.getCountryCode());
+```
+
+<Note>
+  Localization affects the language of metadata (titles, descriptions) and can influence search results and trending content. Not all services support all localizations.
+</Note>
+
+## Error Handling
+
+Always handle exceptions when extracting data:
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+import java.io.IOException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+
+    // Check for partial extraction errors
+    List<Throwable> errors = info.getErrors();
+    if (!errors.isEmpty()) {
+        System.out.println("Warning: Some data failed to extract:");
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getMessage());
+        }
+    }
+
+    // Process the successfully extracted data
+    System.out.println("Title: " + info.getName());
+
+} catch (ContentNotAvailableException e) {
+    System.err.println("Content not available: " + e.getMessage());
+} catch (GeographicRestrictionException e) {
+    System.err.println("Content blocked in your region");
+} catch (AgeRestrictedContentException e) {
+    System.err.println("Age-restricted content requires authentication");
+} catch (ExtractionException e) {
+    System.err.println("Failed to extract data: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+### Common Exceptions
+
+| Exception | Description | Handling |
+|-----------|-------------|----------|
+| `ContentNotAvailableException` | Content was deleted or made private | Inform user, remove from cache |
+| `GeographicRestrictionException` | Content blocked by region | Show region warning |
+| `AgeRestrictedContentException` | Age-restricted content | Request authentication |
+| `ExtractionException` | General extraction failure | Log error, retry if transient |
+| `ReCaptchaException` | Rate limit or bot detection | Implement delays, use session cookies |
+| `IOException` | Network connectivity issues | Check connection, retry with backoff |
+
+<Warning>
+  Always implement proper error handling. Network requests can fail, content can be removed, and parsers may encounter unexpected formats.
+</Warning>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Rate Limiting" icon="gauge">
+    Implement delays between requests to avoid being blocked by services. Use exponential backoff for retries.
+  </Card>
+
+  <Card title="Caching" icon="database">
+    Cache extracted data to reduce unnecessary requests. Consider TTL based on content type (live vs static).
+  </Card>
+
+  <Card title="Null Checks" icon="shield-check">
+    Always check for null or empty values. Many fields return `-1`, empty strings, or empty lists when unavailable.
+  </Card>
+
+  <Card title="Error Recovery" icon="heart-pulse">
+    Use `getErrors()` to identify partial failures and gracefully handle missing optional data.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Extract Streams" icon="video" href="/guides/extracting-streams">
+    Deep dive into stream extraction with advanced features like subtitles, segments, and quality selection
+  </Card>
+
+  <Card title="Extract Channels" icon="user" href="/guides/extracting-channels">
+    Learn how to extract channel information, uploads, and subscriber data
+  </Card>
+
+  <Card title="Search" icon="magnifying-glass" href="/guides/search">
+    Implement search functionality across all supported services
+  </Card>
+
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/error-handling">
+    Master error handling patterns and recovery strategies
+  </Card>
+</CardGroup>

@@ -1,0 +1,175 @@
+---
+title: PeerTube Service
+description: Decentralized video platform support in NewPipe Extractor
+---
+
+PeerTube is a federated, decentralized video platform supported by NewPipe Extractor. Unlike centralized services, PeerTube consists of multiple independent instances that can communicate with each other.
+
+## Media Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Video Streams" icon="video">
+    Access video content across federated instances
+  </Card>
+  <Card title="Comments" icon="comments">
+    Read comment threads and discussions
+  </Card>
+  <Card title="No Audio-Only" icon="music">
+    Audio-only streams are not separately supported
+  </Card>
+  <Card title="No Live Streams" icon="tower-broadcast">
+    Live streaming extraction is not currently available
+  </Card>
+</CardGroup>
+
+## Supported Features
+
+### Content Types
+
+- **Videos**: Standard video uploads with full metadata
+- **Channels**: Video channels for organizing content
+- **Accounts**: User accounts that can have multiple channels
+
+### Channels and Accounts
+
+PeerTube distinguishes between accounts and channels:
+
+- **Accounts**: User accounts (`/accounts/username`)
+- **Video Channels**: Content channels (`/video-channels/channelname`)
+- Channel tabs for content organization
+- Account and channel descriptions
+
+<Info>
+The extractor automatically detects whether a URL points to an account or a video channel and uses the appropriate extractor.
+</Info>
+
+### Playlists
+
+- User-created playlists
+- Channel playlists
+- Playlist metadata and descriptions
+- Video ordering and counts
+
+### Search
+
+PeerTube offers two search modes:
+
+- **Local Search**: Search within a specific instance
+- **Sepia Search**: Federated search across multiple instances (using `sepia_` content filter)
+
+<Note>
+Federated search allows discovering content across the entire PeerTube network, not just a single instance.
+</Note>
+
+### Kiosks (Trending)
+
+PeerTube provides several discovery feeds:
+
+- **Trending**: Most popular recent videos (default kiosk)
+- **Most Liked**: Videos with the most likes
+- **Recent**: Recently uploaded videos
+- **Local**: Videos from the local instance only
+
+## Instance Configuration
+
+PeerTube's federated nature requires instance configuration:
+
+### Default Instance
+
+The service uses a default PeerTube instance, but this can be customized:
+
+```java
+// Using default instance
+PeertubeService service = new PeertubeService(3);
+
+// Using custom instance
+PeertubeInstance customInstance = new PeertubeInstance("https://example.peertube.org");
+PeertubeService service = new PeertubeService(3, customInstance);
+```
+
+### Instance Methods
+
+- `getInstance()`: Get current instance configuration
+- `setInstance(PeertubeInstance)`: Change instance
+- `getBaseUrl()`: Returns the instance URL
+
+<Info>
+You can switch between PeerTube instances dynamically, allowing your application to connect to different servers.
+</Info>
+
+## Special Features
+
+### Federation Support
+
+PeerTube's federated architecture:
+
+- Connect to any PeerTube instance
+- Cross-instance content discovery
+- Federated search (Sepia)
+- Instance-specific content
+
+### Comments System
+
+- Threaded comment discussions
+- Federated comments across instances
+- Comment counts and replies
+
+### Video Information
+
+- Multiple quality options
+- View counts and engagement metrics
+- Video descriptions and tags
+- Upload dates and durations
+- Channel and account attribution
+
+## Technical Details
+
+**Base URL**: Configurable (instance-dependent)
+
+**Default Instance**: `PeertubeInstance.DEFAULT_INSTANCE`
+
+**Service ID**: 3
+
+**Link Handler Factories**:
+- Stream: `PeertubeStreamLinkHandlerFactory`
+- Channel: `PeertubeChannelLinkHandlerFactory`
+- Playlist: `PeertubePlaylistLinkHandlerFactory`
+- Comments: `PeertubeCommentsLinkHandlerFactory`
+- Trending: `PeertubeTrendingLinkHandlerFactory`
+
+## Limitations
+
+<Note>
+PeerTube support has some limitations:
+
+- No audio-only stream capability flag (though video streams may contain audio)
+- Live streaming extraction not currently supported
+- Subscription extraction is not available
+- Search suggestions are not implemented
+- Instance-specific features may vary
+- Requires network connectivity to specific instances
+</Note>
+
+## Federation Considerations
+
+### Instance Availability
+
+- Instances may have different uptime and reliability
+- Content availability varies by instance
+- Some instances may restrict federation
+- Instance-specific moderation policies apply
+
+### Performance
+
+- Response times depend on instance server performance
+- Federated search may be slower than local search
+- Instance bandwidth affects streaming quality
+
+## Use Cases
+
+- Privacy-focused video consumption
+- Decentralized content discovery
+- Self-hosted video platform integration
+- Educational content access
+- Alternative to centralized platforms
+- Instance-specific community content

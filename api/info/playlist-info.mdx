@@ -1,0 +1,500 @@
+---
+title: PlaylistInfo
+description: API reference for the PlaylistInfo class
+---
+
+## Overview
+
+The `PlaylistInfo` class represents detailed information about a playlist on a streaming service. It extends the `ListInfo<StreamInfoItem>` base class and provides metadata about playlists including thumbnails, uploader information, stream count, and playlist type.
+
+## PlaylistType Enum
+
+The `PlaylistType` enum defines different types of playlists:
+
+<ResponseField name="NORMAL" type="PlaylistType">
+  A normal playlist created by a user (not a mix)
+</ResponseField>
+
+<ResponseField name="MIX_STREAM" type="PlaylistType">
+  A mix made only of streams related to a particular stream (e.g., YouTube mixes)
+</ResponseField>
+
+<ResponseField name="MIX_MUSIC" type="PlaylistType">
+  A mix made only of music streams related to a particular stream (e.g., YouTube music mixes)
+</ResponseField>
+
+<ResponseField name="MIX_CHANNEL" type="PlaylistType">
+  A mix made only of streams from or related to the same channel (deprecated, no longer used by services)
+</ResponseField>
+
+<ResponseField name="MIX_GENRE" type="PlaylistType">
+  A mix made only of streams related to a particular musical genre (e.g., YouTube genre mixes)
+</ResponseField>
+
+## Static Methods
+
+### getInfo(String url)
+
+<ResponseField name="getInfo" type="PlaylistInfo">
+  Extracts playlist information from a URL.
+  
+  <Expandable title="parameters">
+    <ResponseField name="url" type="String" required>
+      The URL of the playlist to extract information from
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(StreamingService service, String url)
+
+<ResponseField name="getInfo" type="PlaylistInfo">
+  Extracts playlist information from a URL using a specific service.
+  
+  <Expandable title="parameters">
+    <ResponseField name="service" type="StreamingService" required>
+      The streaming service to use for extraction
+    </ResponseField>
+    <ResponseField name="url" type="String" required>
+      The URL of the playlist to extract
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(PlaylistExtractor extractor)
+
+<ResponseField name="getInfo" type="PlaylistInfo">
+  Extracts playlist information from a PlaylistExtractor instance.
+  
+  <Expandable title="parameters">
+    <ResponseField name="extractor" type="PlaylistExtractor" required>
+      An extractor instance where fetchPage() was already called
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getMoreItems(StreamingService service, String url, Page page)
+
+<ResponseField name="getMoreItems" type="InfoItemsPage<StreamInfoItem>">
+  Retrieves additional playlist items (for pagination).
+  
+  <Expandable title="parameters">
+    <ResponseField name="service" type="StreamingService" required>
+      The streaming service to use
+    </ResponseField>
+    <ResponseField name="url" type="String" required>
+      The URL of the playlist
+    </ResponseField>
+    <ResponseField name="page" type="Page" required>
+      The page object for pagination
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+## Fields
+
+### Inherited from Info
+
+<ResponseField name="serviceId" type="int">
+  The ID of the streaming service
+</ResponseField>
+
+<ResponseField name="id" type="String">
+  The unique identifier for this playlist
+</ResponseField>
+
+<ResponseField name="url" type="String">
+  The cleaned URL of the playlist
+</ResponseField>
+
+<ResponseField name="originalUrl" type="String">
+  The original URL used to start extraction
+</ResponseField>
+
+<ResponseField name="name" type="String">
+  The name/title of the playlist
+</ResponseField>
+
+### Inherited from ListInfo
+
+<ResponseField name="relatedItems" type="List<StreamInfoItem>">
+  List of streams/videos in the playlist
+</ResponseField>
+
+<ResponseField name="nextPage" type="Page">
+  The next page object for pagination (null if no more pages)
+</ResponseField>
+
+<ResponseField name="contentFilters" type="List<String>">
+  Content filters applied to the playlist
+</ResponseField>
+
+<ResponseField name="sortFilter" type="String">
+  Sort filter applied to the playlist
+</ResponseField>
+
+### Playlist Information
+
+<ResponseField name="streamCount" type="long">
+  The total number of streams in the playlist
+</ResponseField>
+
+<ResponseField name="playlistType" type="PlaylistType">
+  The type of playlist (NORMAL, MIX_STREAM, MIX_MUSIC, etc.)
+</ResponseField>
+
+<ResponseField name="description" type="Description">
+  The description of the playlist
+</ResponseField>
+
+### Playlist Visuals
+
+<ResponseField name="thumbnails" type="List<Image>" default="[]">
+  List of thumbnail images for the playlist
+</ResponseField>
+
+<ResponseField name="banners" type="List<Image>" default="[]">
+  List of banner images for the playlist
+</ResponseField>
+
+### Uploader Information
+
+<ResponseField name="uploaderName" type="String">
+  The name of the playlist creator/uploader (empty string by default)
+</ResponseField>
+
+<ResponseField name="uploaderUrl" type="String">
+  The URL to the uploader's channel (empty string by default)
+</ResponseField>
+
+<ResponseField name="uploaderAvatars" type="List<Image>" default="[]">
+  List of uploader avatar images
+</ResponseField>
+
+### Sub-Channel Information
+
+<ResponseField name="subChannelName" type="String">
+  The name of the sub-channel (if applicable)
+</ResponseField>
+
+<ResponseField name="subChannelUrl" type="String">
+  The URL to the sub-channel
+</ResponseField>
+
+<ResponseField name="subChannelAvatars" type="List<Image>" default="[]">
+  List of sub-channel avatar images
+</ResponseField>
+
+## Methods
+
+### Getters and Setters
+
+All fields have corresponding getter and setter methods following JavaBean conventions:
+
+#### Stream Count Methods
+<ResponseField name="getStreamCount" type="long">
+  Returns the total number of streams in the playlist
+</ResponseField>
+
+<ResponseField name="setStreamCount" type="void">
+  Sets the stream count
+  
+  <Expandable title="parameters">
+    <ResponseField name="streamCount" type="long" required>
+      The stream count
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Playlist Type Methods
+<ResponseField name="getPlaylistType" type="PlaylistType">
+  Returns the playlist type
+</ResponseField>
+
+<ResponseField name="setPlaylistType" type="void">
+  Sets the playlist type
+  
+  <Expandable title="parameters">
+    <ResponseField name="playlistType" type="PlaylistType" required>
+      The playlist type
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Description Methods
+<ResponseField name="getDescription" type="Description">
+  Returns the playlist description
+</ResponseField>
+
+<ResponseField name="setDescription" type="void">
+  Sets the playlist description
+  
+  <Expandable title="parameters">
+    <ResponseField name="description" type="Description" required>
+      The description
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Thumbnail Methods
+<ResponseField name="getThumbnails" type="List<Image>">
+  Returns the list of thumbnail images
+</ResponseField>
+
+<ResponseField name="setThumbnails" type="void">
+  Sets the thumbnail images
+  
+  <Expandable title="parameters">
+    <ResponseField name="thumbnails" type="List<Image>" required>
+      The list of thumbnails
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Banner Methods
+<ResponseField name="getBanners" type="List<Image>">
+  Returns the list of banner images
+</ResponseField>
+
+<ResponseField name="setBanners" type="void">
+  Sets the banner images
+  
+  <Expandable title="parameters">
+    <ResponseField name="banners" type="List<Image>" required>
+      The list of banners
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Uploader Methods
+<ResponseField name="getUploaderName" type="String">
+  Returns the uploader name
+</ResponseField>
+
+<ResponseField name="setUploaderName" type="void">
+  Sets the uploader name
+  
+  <Expandable title="parameters">
+    <ResponseField name="uploaderName" type="String" required>
+      The uploader name
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getUploaderUrl" type="String">
+  Returns the uploader URL
+</ResponseField>
+
+<ResponseField name="setUploaderUrl" type="void">
+  Sets the uploader URL
+  
+  <Expandable title="parameters">
+    <ResponseField name="uploaderUrl" type="String" required>
+      The uploader URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getUploaderAvatars" type="List<Image>">
+  Returns the uploader avatars
+</ResponseField>
+
+<ResponseField name="setUploaderAvatars" type="void">
+  Sets the uploader avatars
+  
+  <Expandable title="parameters">
+    <ResponseField name="uploaderAvatars" type="List<Image>" required>
+      The uploader avatars
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Sub-Channel Methods
+<ResponseField name="getSubChannelName" type="String">
+  Returns the sub-channel name
+</ResponseField>
+
+<ResponseField name="setSubChannelName" type="void">
+  Sets the sub-channel name
+  
+  <Expandable title="parameters">
+    <ResponseField name="subChannelName" type="String" required>
+      The sub-channel name
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getSubChannelUrl" type="String">
+  Returns the sub-channel URL
+</ResponseField>
+
+<ResponseField name="setSubChannelUrl" type="void">
+  Sets the sub-channel URL
+  
+  <Expandable title="parameters">
+    <ResponseField name="subChannelUrl" type="String" required>
+      The sub-channel URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getSubChannelAvatars" type="List<Image>">
+  Returns the sub-channel avatars
+</ResponseField>
+
+<ResponseField name="setSubChannelAvatars" type="void">
+  Sets the sub-channel avatars
+  
+  <Expandable title="parameters">
+    <ResponseField name="subChannelAvatars" type="List<Image>" required>
+      The sub-channel avatars
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Inherited Methods from ListInfo
+
+<ResponseField name="getRelatedItems" type="List<StreamInfoItem>">
+  Returns the list of streams in the playlist
+</ResponseField>
+
+<ResponseField name="setRelatedItems" type="void">
+  Sets the list of streams
+  
+  <Expandable title="parameters">
+    <ResponseField name="relatedItems" type="List<StreamInfoItem>" required>
+      The list of streams
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="hasNextPage" type="boolean">
+  Returns true if there is a next page of items
+</ResponseField>
+
+<ResponseField name="getNextPage" type="Page">
+  Returns the next page object for pagination
+</ResponseField>
+
+<ResponseField name="setNextPage" type="void">
+  Sets the next page
+  
+  <Expandable title="parameters">
+    <ResponseField name="page" type="Page" required>
+      The next page
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getContentFilters" type="List<String>">
+  Returns the content filters
+</ResponseField>
+
+<ResponseField name="getSortFilter" type="String">
+  Returns the sort filter
+</ResponseField>
+
+### Inherited Methods from Info
+
+<ResponseField name="getServiceId" type="int">
+  Returns the service ID
+</ResponseField>
+
+<ResponseField name="getService" type="StreamingService">
+  Returns the StreamingService instance for this info object
+</ResponseField>
+
+<ResponseField name="getId" type="String">
+  Returns the unique identifier
+</ResponseField>
+
+<ResponseField name="getUrl" type="String">
+  Returns the cleaned URL
+</ResponseField>
+
+<ResponseField name="getOriginalUrl" type="String">
+  Returns the original URL used for extraction
+</ResponseField>
+
+<ResponseField name="getName" type="String">
+  Returns the playlist name
+</ResponseField>
+
+<ResponseField name="getErrors" type="List<Throwable>">
+  Returns a list of non-fatal errors that occurred during extraction
+</ResponseField>
+
+<ResponseField name="addError" type="void">
+  Adds an error to the error list
+  
+  <Expandable title="parameters">
+    <ResponseField name="throwable" type="Throwable" required>
+      The error to add
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Usage
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.playlist.PlaylistInfo;
+import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+import org.schabi.newpipe.extractor.Page;
+
+// Initialize NewPipe
+NewPipe.init(DownloaderFactory.getDownloader());
+
+// Extract playlist information
+PlaylistInfo playlistInfo = PlaylistInfo.getInfo("https://www.youtube.com/playlist?list=PLexample");
+
+// Access playlist properties
+String playlistName = playlistInfo.getName();
+long streamCount = playlistInfo.getStreamCount();
+String uploaderName = playlistInfo.getUploaderName();
+
+// Check playlist type
+PlaylistInfo.PlaylistType type = playlistInfo.getPlaylistType();
+if (type == PlaylistInfo.PlaylistType.MIX_MUSIC) {
+    System.out.println("This is a music mix");
+}
+
+// Get playlist items
+List<StreamInfoItem> items = playlistInfo.getRelatedItems();
+for (StreamInfoItem item : items) {
+    System.out.println(item.getName() + " - " + item.getUrl());
+}
+
+// Handle pagination
+if (playlistInfo.hasNextPage()) {
+    Page nextPage = playlistInfo.getNextPage();
+    InfoItemsPage<StreamInfoItem> moreItems = PlaylistInfo.getMoreItems(
+        playlistInfo.getService(),
+        playlistInfo.getUrl(),
+        nextPage
+    );
+    List<StreamInfoItem> additionalItems = moreItems.getItems();
+}
+
+// Get playlist visuals
+List<Image> thumbnails = playlistInfo.getThumbnails();
+List<Image> banners = playlistInfo.getBanners();
+```

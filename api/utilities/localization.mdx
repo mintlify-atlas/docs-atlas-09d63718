@@ -1,0 +1,567 @@
+---
+title: Localization
+description: Language and country settings for content extraction
+---
+
+The localization utilities provide classes for specifying language preferences and content regions when extracting data from streaming services. These settings affect which content is returned and how dates/times are formatted.
+
+## Localization Class
+
+The `Localization` class represents a language and optional country code combination, used to set the `Accept-Language` header in requests and parse locale-specific content.
+
+### Constants
+
+<ResponseField name="DEFAULT" type="Localization" default="en-GB">
+  The default localization (English, Great Britain)
+</ResponseField>
+
+### Constructors
+
+#### Localization(String languageCode, String countryCode)
+
+<ParamField path="languageCode" type="String" required>
+  ISO 639-1 two-letter language code (e.g., "en", "fr", "ja")
+</ParamField>
+
+<ParamField path="countryCode" type="String">
+  ISO 3166-1 alpha-2 country code (e.g., "US", "FR", "JP"). Can be null.
+</ParamField>
+
+Creates a localization with language and optional country code.
+
+```java
+// Language and country
+Localization locale = new Localization("en", "US");
+
+// Language only
+Localization locale = new Localization("fr", null);
+```
+
+#### Localization(String languageCode)
+
+<ParamField path="languageCode" type="String" required>
+  ISO 639-1 two-letter language code
+</ParamField>
+
+Creates a localization with only a language code (no country).
+
+```java
+Localization locale = new Localization("de");
+```
+
+### Static Factory Methods
+
+#### fromLocalizationCode
+
+<ParamField path="localizationCode" type="String" required>
+  Localization code in the format "language-Country" or just "language"
+</ParamField>
+
+<ResponseField name="Optional<Localization>" type="Optional<Localization>">
+  A Localization if the code was valid, empty Optional otherwise
+</ResponseField>
+
+Parses a localization code string into a Localization object.
+
+```java
+Optional<Localization> locale = 
+    Localization.fromLocalizationCode("en-US");
+
+if (locale.isPresent()) {
+    Localization l = locale.get();
+    System.out.println(l.getLanguageCode()); // "en"
+    System.out.println(l.getCountryCode());   // "US"
+}
+```
+
+#### listFrom
+
+<ParamField path="localizationCodeList" type="String..." required>
+  Variable arguments of localization codes
+</ParamField>
+
+<ResponseField name="List<Localization>" type="List<Localization>">
+  Unmodifiable list of Localization objects
+</ResponseField>
+
+Creates a list of Localization objects from localization code strings.
+
+```java
+List<Localization> locales = Localization.listFrom(
+    "en-US", "en-GB", "fr-FR", "de"
+);
+```
+
+**Throws:**
+- `IllegalArgumentException` - If any code is formatted incorrectly
+
+#### fromLocale
+
+<ParamField path="locale" type="java.util.Locale" required>
+  A Java Locale object
+</ParamField>
+
+<ResponseField name="Localization" type="Localization">
+  A new Localization object
+</ResponseField>
+
+Converts a Java `Locale` to a `Localization`.
+
+```java
+Locale javaLocale = Locale.JAPAN;
+Localization locale = Localization.fromLocale(javaLocale);
+// Result: Localization with language="ja", country="JP"
+```
+
+#### getLocaleFromThreeLetterCode
+
+<ParamField path="code" type="String" required>
+  ISO 639-2/T three-letter language code (e.g., "eng", "fra")
+</ParamField>
+
+<ResponseField name="Locale" type="java.util.Locale">
+  The corresponding Java Locale
+</ResponseField>
+
+Converts a three-letter ISO 639-2/T language code to a Java Locale. This is useful when services return three-letter codes.
+
+```java
+try {
+    Locale locale = Localization.getLocaleFromThreeLetterCode("eng");
+    // Returns Locale for English
+} catch (ParsingException e) {
+    // Code not recognized
+}
+```
+
+**Throws:**
+- `ParsingException` - If the code is not a valid ISO 639-2/T language code
+
+### Instance Methods
+
+#### getLanguageCode
+
+<ResponseField name="String" type="String">
+  The two-letter language code
+</ResponseField>
+
+Returns the language code of this localization.
+
+```java
+Localization locale = new Localization("fr", "CA");
+String lang = locale.getLanguageCode(); // "fr"
+```
+
+#### getCountryCode
+
+<ResponseField name="String" type="String">
+  The two-letter country code, or empty string if not set
+</ResponseField>
+
+Returns the country code, or an empty string if no country was specified.
+
+```java
+Localization locale1 = new Localization("en", "US");
+String country1 = locale1.getCountryCode(); // "US"
+
+Localization locale2 = new Localization("en");
+String country2 = locale2.getCountryCode(); // ""
+```
+
+#### getLocalizationCode
+
+<ResponseField name="String" type="String">
+  Formatted localization code
+</ResponseField>
+
+Returns a formatted string in the form "language-Country" or just "language" if country is not set.
+
+```java
+Localization locale1 = new Localization("en", "US");
+String code1 = locale1.getLocalizationCode(); // "en-US"
+
+Localization locale2 = new Localization("fr");
+String code2 = locale2.getLocalizationCode(); // "fr"
+```
+
+### Examples
+
+```java
+// Create localizations
+Localization enUS = new Localization("en", "US");
+Localization frFR = new Localization("fr", "FR");
+Localization japanese = new Localization("ja");
+
+// Use with downloader
+Response response = downloader.get(url, enUS);
+
+// Parse from string
+Optional<Localization> parsed = 
+    Localization.fromLocalizationCode("de-DE");
+
+// Create list
+List<Localization> supportedLocales = Localization.listFrom(
+    "en-US", "en-GB", "fr-FR", "de-DE", "es-ES"
+);
+```
+
+## ContentCountry Class
+
+The `ContentCountry` class represents a country that should be used when fetching content. Services like YouTube return different feed results depending on the selected country.
+
+### Constants
+
+<ResponseField name="DEFAULT" type="ContentCountry" default="GB">
+  The default content country (Great Britain)
+</ResponseField>
+
+### Constructor
+
+<ParamField path="countryCode" type="String" required>
+  ISO 3166-1 alpha-2 country code
+</ParamField>
+
+Creates a ContentCountry with the specified country code.
+
+```java
+ContentCountry usa = new ContentCountry("US");
+ContentCountry japan = new ContentCountry("JP");
+```
+
+### Static Methods
+
+#### listFrom
+
+<ParamField path="countryCodeList" type="String..." required>
+  Variable arguments of country codes
+</ParamField>
+
+<ResponseField name="List<ContentCountry>" type="List<ContentCountry>">
+  Unmodifiable list of ContentCountry objects
+</ResponseField>
+
+Creates a list of ContentCountry objects from country code strings.
+
+```java
+List<ContentCountry> countries = ContentCountry.listFrom(
+    "US", "GB", "CA", "AU", "IN"
+);
+```
+
+### Instance Methods
+
+#### getCountryCode
+
+<ResponseField name="String" type="String">
+  The two-letter country code
+</ResponseField>
+
+Returns the country code of this ContentCountry.
+
+```java
+ContentCountry country = new ContentCountry("FR");
+String code = country.getCountryCode(); // "FR"
+```
+
+### Examples
+
+```java
+// Set content country for a service
+ContentCountry country = new ContentCountry("US");
+NewPipe.setPreferredContentCountry(country);
+
+// Get trending videos for different countries
+ContentCountry us = new ContentCountry("US");
+ContentCountry jp = new ContentCountry("JP");
+
+ListExtractor<StreamInfoItem> usTrending = 
+    service.getKioskList().getExtractorById("Trending", us);
+ListExtractor<StreamInfoItem> jpTrending = 
+    service.getKioskList().getExtractorById("Trending", jp);
+```
+
+## TimeAgoParser Class
+
+The `TimeAgoParser` class helps parse relative date strings like "2 hours ago" or "3 days ago" into concrete dates. This is commonly needed when services return upload dates in this format.
+
+### Constructor
+
+<ParamField path="patternsHolder" type="PatternsHolder" required>
+  Object holding time ago patterns, special cases, and word separator
+</ParamField>
+
+<ParamField path="now" type="LocalDateTime" required>
+  The current time to calculate dates from
+</ParamField>
+
+Creates a TimeAgoParser instance. You should create a new instance for each batch of items you extract.
+
+```java
+PatternsHolder patterns = getServicePatterns();
+LocalDateTime now = LocalDateTime.now();
+TimeAgoParser parser = new TimeAgoParser(patterns, now);
+```
+
+### Methods
+
+#### parse
+
+<ParamField path="textualDate" type="String" required>
+  The date text to parse (e.g., "2 hours ago", "3 days ago")
+</ParamField>
+
+<ResponseField name="DateWrapper" type="DateWrapper">
+  The parsed date (may be approximate)
+</ResponseField>
+
+Parses a textual date string into a DateWrapper. Dates starting from "days ago" are considered approximations.
+
+```java
+TimeAgoParser parser = new TimeAgoParser(patterns, LocalDateTime.now());
+
+try {
+    DateWrapper date = parser.parse("2 hours ago");
+    OffsetDateTime dateTime = date.offsetDateTime();
+    boolean isApprox = date.isApproximation(); // false
+    
+    DateWrapper oldDate = parser.parse("3 weeks ago");
+    boolean isApprox2 = oldDate.isApproximation(); // true
+} catch (ParsingException e) {
+    // Could not parse the date
+}
+```
+
+**Throws:**
+- `ParsingException` - If the time unit could not be recognized
+
+### Example Usage
+
+```java
+public class VideoExtractor {
+    private TimeAgoParser timeAgoParser;
+    
+    public void extract() throws ExtractionException {
+        // Create parser for this extraction session
+        PatternsHolder patterns = getEnglishPatterns();
+        timeAgoParser = new TimeAgoParser(patterns, LocalDateTime.now());
+        
+        // Parse upload dates
+        String uploadText = "5 hours ago";
+        DateWrapper uploadDate = timeAgoParser.parse(uploadText);
+        
+        // Use the date
+        OffsetDateTime date = uploadDate.offsetDateTime();
+        boolean approximate = uploadDate.isApproximation();
+    }
+}
+```
+
+## DateWrapper Class
+
+The `DateWrapper` class wraps a date/time value and indicates whether it's precise or approximate.
+
+### Constructors
+
+<ParamField path="instant" type="Instant" required>
+  The date/time instant
+</ParamField>
+
+<ParamField path="isApproximation" type="boolean" default="false">
+  Whether the date is approximate
+</ParamField>
+
+Creates a DateWrapper from an Instant.
+
+```java
+Instant now = Instant.now();
+DateWrapper exact = new DateWrapper(now);
+DateWrapper approx = new DateWrapper(now, true);
+```
+
+**Other constructors:**
+- `DateWrapper(OffsetDateTime dateTime)` - From OffsetDateTime
+- `DateWrapper(OffsetDateTime dateTime, boolean isApproximation)`
+- `DateWrapper(LocalDateTime dateTime, boolean isApproximation)` - Uses system time zone
+
+### Static Methods
+
+#### fromOffsetDateTime
+
+<ParamField path="date" type="String" required>
+  ISO-8601 formatted date string (e.g., "2011-12-03T10:15:30+01:00")
+</ParamField>
+
+<ResponseField name="DateWrapper" type="DateWrapper">
+  A non-approximate DateWrapper, or null if input is null
+</ResponseField>
+
+Parses an ISO-8601 OffsetDateTime string.
+
+```java
+try {
+    DateWrapper date = DateWrapper.fromOffsetDateTime(
+        "2024-01-15T14:30:00+00:00"
+    );
+    OffsetDateTime dt = date.offsetDateTime();
+} catch (ParsingException e) {
+    // Invalid format
+}
+```
+
+#### fromInstant
+
+<ParamField path="date" type="String" required>
+  ISO-8601 Instant string (e.g., "2011-12-03T10:15:30Z")
+</ParamField>
+
+<ResponseField name="DateWrapper" type="DateWrapper">
+  A non-approximate DateWrapper, or null if input is null
+</ResponseField>
+
+Parses an ISO-8601 Instant string.
+
+```java
+try {
+    DateWrapper date = DateWrapper.fromInstant(
+        "2024-01-15T14:30:00Z"
+    );
+} catch (ParsingException e) {
+    // Invalid format
+}
+```
+
+### Instance Methods
+
+#### getInstant
+
+<ResponseField name="Instant" type="Instant">
+  The wrapped instant
+</ResponseField>
+
+Returns the underlying Instant.
+
+#### offsetDateTime
+
+<ResponseField name="OffsetDateTime" type="OffsetDateTime">
+  The instant as an OffsetDateTime in UTC
+</ResponseField>
+
+Returns the date as an OffsetDateTime set to UTC.
+
+```java
+DateWrapper date = parser.parse("1 hour ago");
+OffsetDateTime dt = date.offsetDateTime();
+```
+
+#### getLocalDateTime
+
+<ResponseField name="LocalDateTime" type="LocalDateTime">
+  The instant as a LocalDateTime in system time zone
+</ResponseField>
+
+Returns the date as a LocalDateTime in the system default time zone.
+
+```java
+LocalDateTime local = date.getLocalDateTime();
+```
+
+**Overload with ZoneId:**
+```java
+LocalDateTime tokyo = date.getLocalDateTime(ZoneId.of("Asia/Tokyo"));
+```
+
+#### isApproximation
+
+<ResponseField name="boolean" type="boolean">
+  True if the date is approximate, false if precise
+</ResponseField>
+
+Indicates whether the date is precise or just an approximation.
+
+```java
+DateWrapper recent = parser.parse("30 seconds ago");
+boolean approx1 = recent.isApproximation(); // false - precise
+
+DateWrapper old = parser.parse("2 months ago");
+boolean approx2 = old.isApproximation(); // true - approximate
+```
+
+### Example Usage
+
+```java
+public DateWrapper parseUploadDate(String dateText) 
+        throws ParsingException {
+    // Try parsing as ISO-8601 first
+    DateWrapper date = DateWrapper.fromOffsetDateTime(dateText);
+    if (date != null) {
+        return date;
+    }
+    
+    // Fall back to relative date parsing
+    TimeAgoParser parser = new TimeAgoParser(
+        patterns, 
+        LocalDateTime.now()
+    );
+    return parser.parse(dateText);
+}
+
+public void displayDate(DateWrapper dateWrapper) {
+    OffsetDateTime date = dateWrapper.offsetDateTime();
+    
+    if (dateWrapper.isApproximation()) {
+        System.out.println("Approximately: " + date);
+    } else {
+        System.out.println("Exact date: " + date);
+    }
+}
+```
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.localization.*;
+import org.schabi.newpipe.extractor.downloader.Downloader;
+import org.schabi.newpipe.extractor.exceptions.ParsingException;
+
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+
+public class LocalizationExample {
+    public void extractContent(Downloader downloader) 
+            throws IOException, ExtractionException {
+        // Set up localization
+        Localization locale = new Localization("en", "US");
+        ContentCountry country = new ContentCountry("US");
+        
+        // Fetch content with localization
+        Response response = downloader.get(
+            "https://example.com/api/videos",
+            locale
+        );
+        
+        // Parse relative dates
+        TimeAgoParser dateParser = new TimeAgoParser(
+            englishPatterns,
+            LocalDateTime.now()
+        );
+        
+        try {
+            DateWrapper uploadDate = dateParser.parse("2 hours ago");
+            OffsetDateTime dateTime = uploadDate.offsetDateTime();
+            
+            if (!uploadDate.isApproximation()) {
+                System.out.println("Video uploaded at: " + dateTime);
+            } else {
+                System.out.println("Video uploaded around: " + dateTime);
+            }
+        } catch (ParsingException e) {
+            System.err.println("Could not parse date: " + e.getMessage());
+        }
+    }
+}
+```
+
+## Related Classes
+
+- [Downloader](/api/utilities/downloader) - Uses Localization for HTTP requests
+- [Exceptions](/api/utilities/exceptions) - ParsingException thrown by date parsing

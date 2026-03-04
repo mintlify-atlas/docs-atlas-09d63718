@@ -1,0 +1,337 @@
+---
+title: KioskExtractor
+description: API reference for KioskExtractor class - extracts content from service kiosks like trending, featured, and popular sections
+---
+
+## Overview
+
+The `KioskExtractor` class extracts content from streaming service kiosks such as trending pages, featured content, and popular sections. It extends `ListExtractor<T extends InfoItem>` and is generic to support different types of content items.
+
+**Package:** `org.schabi.newpipe.extractor.kiosk`
+
+**Extends:** `ListExtractor<T extends InfoItem>`
+
+**Type Parameter:** `T` - The type of info items this kiosk contains (e.g., StreamInfoItem, ChannelInfoItem)
+
+## Constructor
+
+<ParamField path="streamingService" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The list link handler containing URL information for this kiosk
+</ParamField>
+
+<ParamField path="kioskId" type="String" required>
+  The unique identifier for this kiosk (e.g., "Trending", "Popular")
+</ParamField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId()
+```
+
+Returns the kiosk identifier.
+
+<ResponseField name="return" type="String">
+  The kiosk ID (typically in English for frontend identification)
+</ResponseField>
+
+### getName()
+
+```java
+public abstract String getName() throws ParsingException
+```
+
+Returns the localized name of the kiosk.
+
+The ID is used for identifying the kiosk in the frontend (kept in English), while the name is the translated version crawled from the website.
+
+<ResponseField name="return" type="String">
+  The kiosk's display name in the current localization
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the URL for this kiosk.
+
+<ResponseField name="return" type="String">
+  The kiosk's URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the kiosk page. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## List Extraction Methods (Inherited from ListExtractor)
+
+### getInitialPage()
+
+```java
+public abstract InfoItemsPage<T> getInitialPage() throws IOException, ExtractionException
+```
+
+Returns the first page of kiosk items.
+
+<ResponseField name="return" type="InfoItemsPage<T>">
+  Page object containing initial items and next page reference
+</ResponseField>
+
+### getPage()
+
+```java
+public abstract InfoItemsPage<T> getPage(Page page) throws IOException, ExtractionException
+```
+
+Returns a specific page of kiosk items.
+
+<ParamField path="page" type="Page" required>
+  The page reference obtained from a previous page's `getNextPage()` method
+</ParamField>
+
+<ResponseField name="return" type="InfoItemsPage<T>">
+  Page object containing items and next page reference
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+
+// Get the kiosk list
+KioskList kioskList = service.getKioskList();
+
+// Get available kiosk IDs
+List<String> kioskIds = kioskList.getAvailableKiosks();
+System.out.println("Available kiosks: " + kioskIds);
+
+// Get a specific kiosk (e.g., "Trending")
+KioskExtractor<StreamInfoItem> extractor = kioskList.getExtractorById("Trending", null);
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Get kiosk information
+String id = extractor.getId();           // "Trending"
+String name = extractor.getName();       // "Trending" (localized)
+
+// Get first page of items
+InfoItemsPage<StreamInfoItem> initialPage = extractor.getInitialPage();
+List<StreamInfoItem> items = initialPage.getItems();
+
+for (StreamInfoItem item : items) {
+    System.out.println("Title: " + item.getName());
+    System.out.println("Uploader: " + item.getUploaderName());
+    System.out.println("Views: " + item.getViewCount());
+    System.out.println("---");
+}
+
+// Paginate through all items
+Page nextPage = initialPage.getNextPage();
+while (nextPage != null) {
+    InfoItemsPage<StreamInfoItem> page = extractor.getPage(nextPage);
+    // Process items on this page...
+    nextPage = page.getNextPage();
+}
+```
+
+## Getting Kiosk by URL
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+KioskList kioskList = service.getKioskList();
+
+// Get extractor from URL
+KioskExtractor<?> extractor = kioskList.getExtractorByUrl(
+    "https://www.youtube.com/feed/trending",
+    null
+);
+
+extractor.fetchPage();
+String kioskId = extractor.getId();
+String kioskName = extractor.getName();
+```
+
+## Setting Content Country
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+KioskList kioskList = service.getKioskList();
+
+// Set content country to get region-specific trending
+KioskExtractor<StreamInfoItem> extractor = kioskList.getExtractorById(
+    "Trending",
+    null
+);
+
+// Force content country to Japan
+extractor.forceContentCountry(new ContentCountry("JP"));
+extractor.fetchPage();
+
+// Now get trending videos from Japan
+InfoItemsPage<StreamInfoItem> page = extractor.getInitialPage();
+```
+
+## Common Kiosk IDs
+
+Different services provide different kiosks. Common examples:
+
+### YouTube
+- `Trending` - Trending videos
+
+### SoundCloud
+- `Top 50` - Top 50 tracks
+- `New & hot` - New and trending content
+
+### PeerTube
+- `Trending` - Trending videos
+- `Most liked` - Most liked content
+- `Recently added` - Recently uploaded videos
+- `Local` - Local instance content
+
+## InfoItemsPage Object
+
+The `InfoItemsPage` returned by `getInitialPage()` and `getPage()` contains:
+
+<ResponseField name="items" type="List<T>">
+  The list of items on this page (type depends on kiosk type)
+</ResponseField>
+
+<ResponseField name="nextPage" type="Page">
+  Reference to the next page, or null if this is the last page
+</ResponseField>
+
+<ResponseField name="errors" type="List<Throwable>">
+  Any errors that occurred during extraction of this page
+</ResponseField>
+
+## KioskList Class
+
+The `KioskList` class manages available kiosks for a service:
+
+### getAvailableKiosks()
+
+```java
+public List<String> getAvailableKiosks() throws ExtractionException
+```
+
+Returns a list of all available kiosk IDs for the service.
+
+### getExtractorById()
+
+```java
+public KioskExtractor<?> getExtractorById(String kioskId, Page nextPage) throws ExtractionException
+```
+
+Returns a kiosk extractor for the specified kiosk ID.
+
+### getExtractorByUrl()
+
+```java
+public KioskExtractor<?> getExtractorByUrl(String url, Page nextPage) throws ExtractionException
+```
+
+Returns a kiosk extractor for the specified URL.
+
+### getDefaultKioskExtractor()
+
+```java
+public KioskExtractor<?> getDefaultKioskExtractor(Page nextPage) throws ExtractionException
+```
+
+Returns the default kiosk extractor for the service.
+
+## Notes
+
+- Always call `fetchPage()` before accessing kiosk data
+- The kiosk ID is kept in English for frontend identification, while `getName()` returns the localized name
+- Different services provide different kiosks - use `getAvailableKiosks()` to discover what's available
+- Kiosk content is often region-specific - use `forceContentCountry()` to get content for specific regions
+- The generic type `T` allows kiosks to contain different types of items (streams, channels, etc.)
+- Some kiosks may not support pagination

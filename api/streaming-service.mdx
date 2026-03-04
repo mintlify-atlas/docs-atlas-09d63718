@@ -1,0 +1,687 @@
+---
+title: "StreamingService"
+description: "Abstract base class for all streaming service implementations"
+---
+
+## Overview
+
+The `StreamingService` class is an abstract base class that defines the interface for all streaming service implementations in NewPipe Extractor. Each supported service (YouTube, SoundCloud, etc.) extends this class.
+
+This class provides:
+- Service identification and metadata
+- Factory methods for creating extractors
+- Link handler factories for different content types
+- Localization support
+- URL type detection
+
+## Constructor
+
+### StreamingService()
+
+Create a new streaming service instance.
+
+<ParamField path="id" type="int" required>
+  The unique identifier for this service
+</ParamField>
+
+<ParamField path="name" type="String" required>
+  The name of the service
+</ParamField>
+
+<ParamField path="capabilities" type="Set<ServiceInfo.MediaCapability>" required>
+  The media capabilities this service supports (AUDIO, VIDEO, LIVE, COMMENTS)
+</ParamField>
+
+## Service Information
+
+### getServiceId()
+
+Get the unique identifier of this service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+```java
+StreamingService youtube = NewPipe.getService("YouTube");
+int id = youtube.getServiceId(); // Returns 0 for YouTube
+```
+
+### getServiceInfo()
+
+Get metadata about this service.
+
+<ResponseField name="return" type="ServiceInfo">
+  Service information including name and capabilities
+</ResponseField>
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+ServiceInfo info = service.getServiceInfo();
+System.out.println("Name: " + info.getName());
+System.out.println("Capabilities: " + info.getMediaCapabilities());
+```
+
+### getBaseUrl()
+
+Get the base URL of this service.
+
+<ResponseField name="return" type="String">
+  The base URL (e.g., "https://www.youtube.com")
+</ResponseField>
+
+```java
+String baseUrl = service.getBaseUrl();
+```
+
+## Link Handler Factories
+
+### getStreamLHFactory()
+
+Get the link handler factory for streams/videos.
+
+<ResponseField name="return" type="LinkHandlerFactory">
+  Factory for creating stream link handlers
+</ResponseField>
+
+```java
+LinkHandlerFactory factory = service.getStreamLHFactory();
+LinkHandler handler = factory.fromUrl("https://youtube.com/watch?v=...");
+```
+
+### getChannelLHFactory()
+
+Get the link handler factory for channels.
+
+<ResponseField name="return" type="ListLinkHandlerFactory">
+  Factory for creating channel link handlers, or null if not supported
+</ResponseField>
+
+```java
+ListLinkHandlerFactory factory = service.getChannelLHFactory();
+if (factory != null) {
+    ListLinkHandler handler = factory.fromUrl(channelUrl);
+}
+```
+
+### getChannelTabLHFactory()
+
+Get the link handler factory for channel tabs.
+
+<ResponseField name="return" type="ListLinkHandlerFactory">
+  Factory for creating channel tab link handlers, or null if not supported
+</ResponseField>
+
+```java
+ListLinkHandlerFactory factory = service.getChannelTabLHFactory();
+```
+
+### getPlaylistLHFactory()
+
+Get the link handler factory for playlists.
+
+<ResponseField name="return" type="ListLinkHandlerFactory">
+  Factory for creating playlist link handlers, or null if not supported
+</ResponseField>
+
+```java
+ListLinkHandlerFactory factory = service.getPlaylistLHFactory();
+```
+
+### getSearchQHFactory()
+
+Get the search query handler factory.
+
+<ResponseField name="return" type="SearchQueryHandlerFactory">
+  Factory for creating search query handlers
+</ResponseField>
+
+```java
+SearchQueryHandlerFactory factory = service.getSearchQHFactory();
+```
+
+### getCommentsLHFactory()
+
+Get the link handler factory for comments.
+
+<ResponseField name="return" type="ListLinkHandlerFactory">
+  Factory for creating comment link handlers
+</ResponseField>
+
+```java
+ListLinkHandlerFactory factory = service.getCommentsLHFactory();
+```
+
+## Extractor Creation
+
+### getSearchExtractor()
+
+Create a search extractor.
+
+<ParamField path="queryHandler" type="SearchQueryHandler" required>
+  The search query handler specifying keywords and filters
+</ParamField>
+
+<ResponseField name="return" type="SearchExtractor">
+  A new search extractor instance
+</ResponseField>
+
+```java
+SearchQueryHandler handler = service.getSearchQHFactory()
+    .fromQuery("cat videos");
+SearchExtractor extractor = service.getSearchExtractor(handler);
+```
+
+### getSearchExtractor() with Parameters
+
+Create a search extractor with explicit parameters.
+
+<ParamField path="query" type="String" required>
+  The search query
+</ParamField>
+
+<ParamField path="contentFilter" type="List<String>" required>
+  Content filters to apply
+</ParamField>
+
+<ParamField path="sortFilter" type="String" required>
+  Sort filter to apply
+</ParamField>
+
+<ResponseField name="return" type="SearchExtractor">
+  A new search extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+List<String> filters = Arrays.asList("video");
+SearchExtractor extractor = service.getSearchExtractor(
+    "cat videos",
+    filters,
+    "relevance"
+);
+```
+
+### getSearchExtractor() Simple
+
+Create a search extractor with just a query.
+
+<ParamField path="query" type="String" required>
+  The search query
+</ParamField>
+
+<ResponseField name="return" type="SearchExtractor">
+  A new search extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+SearchExtractor extractor = service.getSearchExtractor("cat videos");
+extractor.fetchPage();
+for (InfoItem item : extractor.getInitialPage().getItems()) {
+    System.out.println(item.getName());
+}
+```
+
+### getStreamExtractor()
+
+Create a stream/video extractor.
+
+<ParamField path="linkHandler" type="LinkHandler" required>
+  The link handler for the stream
+</ParamField>
+
+<ResponseField name="return" type="StreamExtractor">
+  A new stream extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+LinkHandler handler = service.getStreamLHFactory()
+    .fromUrl("https://youtube.com/watch?v=...");
+StreamExtractor extractor = service.getStreamExtractor(handler);
+```
+
+### getStreamExtractor() by URL
+
+Create a stream extractor from a URL.
+
+<ParamField path="url" type="String" required>
+  The stream URL
+</ParamField>
+
+<ResponseField name="return" type="StreamExtractor">
+  A new stream extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+StreamExtractor extractor = service.getStreamExtractor(
+    "https://youtube.com/watch?v=dQw4w9WgXcQ"
+);
+extractor.fetchPage();
+System.out.println("Title: " + extractor.getName());
+System.out.println("Duration: " + extractor.getLength());
+```
+
+### getChannelExtractor()
+
+Create a channel extractor.
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The link handler for the channel
+</ParamField>
+
+<ResponseField name="return" type="ChannelExtractor">
+  A new channel extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ListLinkHandler handler = service.getChannelLHFactory()
+    .fromUrl(channelUrl);
+ChannelExtractor extractor = service.getChannelExtractor(handler);
+```
+
+### getChannelExtractor() by URL
+
+Create a channel extractor from a URL.
+
+<ParamField path="url" type="String" required>
+  The channel URL
+</ParamField>
+
+<ResponseField name="return" type="ChannelExtractor">
+  A new channel extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ChannelExtractor extractor = service.getChannelExtractor(channelUrl);
+extractor.fetchPage();
+System.out.println("Channel: " + extractor.getName());
+System.out.println("Subscribers: " + extractor.getSubscriberCount());
+```
+
+### getChannelTabExtractor()
+
+Create a channel tab extractor.
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The link handler for the channel tab
+</ParamField>
+
+<ResponseField name="return" type="ChannelTabExtractor">
+  A new channel tab extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ListLinkHandler handler = service.getChannelTabLHFactory()
+    .fromQuery(channelId, Collections.singletonList("videos"), "");
+ChannelTabExtractor extractor = service.getChannelTabExtractor(handler);
+```
+
+### getChannelTabExtractorFromId()
+
+Create a channel tab extractor from channel ID and tab name.
+
+<ParamField path="id" type="String" required>
+  The channel ID
+</ParamField>
+
+<ParamField path="tab" type="String" required>
+  The tab name (e.g., "videos", "playlists")
+</ParamField>
+
+<ResponseField name="return" type="ChannelTabExtractor">
+  A new channel tab extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ChannelTabExtractor extractor = service.getChannelTabExtractorFromId(
+    "UC-lHJZR3Gqxm24_Vd_AJ5Yw",
+    "videos"
+);
+```
+
+### getPlaylistExtractor()
+
+Create a playlist extractor.
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The link handler for the playlist
+</ParamField>
+
+<ResponseField name="return" type="PlaylistExtractor">
+  A new playlist extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ListLinkHandler handler = service.getPlaylistLHFactory()
+    .fromUrl(playlistUrl);
+PlaylistExtractor extractor = service.getPlaylistExtractor(handler);
+```
+
+### getPlaylistExtractor() by URL
+
+Create a playlist extractor from a URL.
+
+<ParamField path="url" type="String" required>
+  The playlist URL
+</ParamField>
+
+<ResponseField name="return" type="PlaylistExtractor">
+  A new playlist extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+PlaylistExtractor extractor = service.getPlaylistExtractor(playlistUrl);
+extractor.fetchPage();
+System.out.println("Playlist: " + extractor.getName());
+System.out.println("Videos: " + extractor.getStreamCount());
+```
+
+### getCommentsExtractor()
+
+Create a comments extractor.
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The link handler for the comments
+</ParamField>
+
+<ResponseField name="return" type="CommentsExtractor">
+  A new comments extractor instance
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+ListLinkHandler handler = service.getCommentsLHFactory()
+    .fromUrl(videoUrl);
+CommentsExtractor extractor = service.getCommentsExtractor(handler);
+```
+
+### getCommentsExtractor() by URL
+
+Create a comments extractor from a URL.
+
+<ParamField path="url" type="String" required>
+  The video URL
+</ParamField>
+
+<ResponseField name="return" type="CommentsExtractor">
+  A new comments extractor instance, or null if not supported
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+CommentsExtractor extractor = service.getCommentsExtractor(videoUrl);
+if (extractor != null) {
+    extractor.fetchPage();
+    for (CommentsInfoItem comment : extractor.getInitialPage().getItems()) {
+        System.out.println(comment.getCommentText());
+    }
+}
+```
+
+### getSuggestionExtractor()
+
+Create a suggestion extractor for search suggestions.
+
+<ResponseField name="return" type="SuggestionExtractor">
+  A new suggestion extractor instance
+</ResponseField>
+
+```java
+SuggestionExtractor extractor = service.getSuggestionExtractor();
+List<String> suggestions = extractor.suggestionList("cat");
+```
+
+### getKioskList()
+
+Get the kiosk list for this service.
+
+<ResponseField name="return" type="KioskList">
+  The kiosk list containing trending/featured content
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the kiosk list cannot be created
+</ResponseField>
+
+```java
+KioskList kioskList = service.getKioskList();
+ListExtractor<StreamInfoItem> trending = kioskList.getDefaultKioskExtractor();
+```
+
+### getFeedExtractor()
+
+Get a feed extractor for subscription feeds.
+
+<ParamField path="url" type="String" required>
+  The feed URL
+</ParamField>
+
+<ResponseField name="return" type="FeedExtractor">
+  A feed extractor instance, or null if not supported
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If the extractor cannot be created
+</ResponseField>
+
+```java
+FeedExtractor extractor = service.getFeedExtractor(feedUrl);
+if (extractor != null) {
+    extractor.fetchPage();
+}
+```
+
+## URL Utilities
+
+### getLinkTypeByUrl()
+
+Determine what type of content a URL points to.
+
+<ParamField path="url" type="String" required>
+  The URL to check
+</ParamField>
+
+<ResponseField name="return" type="LinkType">
+  The link type: STREAM, CHANNEL, PLAYLIST, or NONE
+</ResponseField>
+
+<ResponseField name="throws" type="ParsingException">
+  If the URL cannot be parsed
+</ResponseField>
+
+```java
+try {
+    LinkType type = service.getLinkTypeByUrl(
+        "https://youtube.com/watch?v=..."
+    );
+    
+    switch (type) {
+        case STREAM:
+            System.out.println("This is a video");
+            break;
+        case CHANNEL:
+            System.out.println("This is a channel");
+            break;
+        case PLAYLIST:
+            System.out.println("This is a playlist");
+            break;
+        case NONE:
+            System.out.println("Unknown URL type");
+            break;
+    }
+} catch (ParsingException e) {
+    e.printStackTrace();
+}
+```
+
+## Localization
+
+### getSupportedLocalizations()
+
+Get all localizations supported by this service.
+
+<ResponseField name="return" type="List<Localization>">
+  List of supported localizations
+</ResponseField>
+
+```java
+List<Localization> localizations = service.getSupportedLocalizations();
+for (Localization loc : localizations) {
+    System.out.println(loc.getLanguageCode());
+}
+```
+
+### getSupportedCountries()
+
+Get all content countries supported by this service.
+
+<ResponseField name="return" type="List<ContentCountry>">
+  List of supported content countries
+</ResponseField>
+
+```java
+List<ContentCountry> countries = service.getSupportedCountries();
+```
+
+### getLocalization()
+
+Get the active localization for this service based on user preferences.
+
+<ResponseField name="return" type="Localization">
+  The active localization
+</ResponseField>
+
+```java
+Localization locale = service.getLocalization();
+```
+
+### getContentCountry()
+
+Get the active content country for this service based on user preferences.
+
+<ResponseField name="return" type="ContentCountry">
+  The active content country
+</ResponseField>
+
+```java
+ContentCountry country = service.getContentCountry();
+```
+
+### getTimeAgoParser()
+
+Get a time ago parser for the specified localization.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to get a parser for
+</ParamField>
+
+<ResponseField name="return" type="TimeAgoParser">
+  A time ago parser instance
+</ResponseField>
+
+<ResponseField name="throws" type="IllegalArgumentException">
+  If the localization is not supported
+</ResponseField>
+
+```java
+TimeAgoParser parser = service.getTimeAgoParser(
+    new Localization("en", "US")
+);
+```
+
+## Enums
+
+### LinkType
+
+Represents the type of content a URL points to.
+
+- `NONE` - URL is not recognized
+- `STREAM` - URL points to a video/stream
+- `CHANNEL` - URL points to a channel
+- `PLAYLIST` - URL points to a playlist
+
+### ServiceInfo.MediaCapability
+
+Represents media capabilities of a service.
+
+- `AUDIO` - Service supports audio content
+- `VIDEO` - Service supports video content
+- `LIVE` - Service supports live streaming
+- `COMMENTS` - Service supports comments
+
+## Usage Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.stream.StreamExtractor;
+
+public class StreamingServiceExample {
+    public static void main(String[] args) throws Exception {
+        // Initialize NewPipe
+        NewPipe.init(new DownloaderTestImpl());
+        
+        // Get YouTube service
+        StreamingService service = NewPipe.getService("YouTube");
+        
+        // Check URL type
+        String url = "https://youtube.com/watch?v=dQw4w9WgXcQ";
+        LinkType type = service.getLinkTypeByUrl(url);
+        
+        if (type == StreamingService.LinkType.STREAM) {
+            // Extract video information
+            StreamExtractor extractor = service.getStreamExtractor(url);
+            extractor.fetchPage();
+            
+            System.out.println("Title: " + extractor.getName());
+            System.out.println("Uploader: " + extractor.getUploaderName());
+            System.out.println("Duration: " + extractor.getLength() + " seconds");
+            System.out.println("Views: " + extractor.getViewCount());
+        }
+    }
+}
+```

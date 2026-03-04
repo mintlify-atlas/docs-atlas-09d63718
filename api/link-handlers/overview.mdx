@@ -1,0 +1,113 @@
+---
+title: Link Handler System Overview
+description: Understanding the Link Handler system in NewPipe Extractor
+---
+
+The Link Handler system is a core component of NewPipe Extractor that provides a unified way to parse, validate, and construct URLs for different streaming services. It abstracts the complexity of handling various URL formats and provides a consistent interface for working with links across different platforms.
+
+## Architecture
+
+The Link Handler system consists of several key components:
+
+### Core Classes
+
+**LinkHandler** - The base data class that holds URL information:
+- `originalUrl` - The original URL as provided by the user
+- `url` - The cleaned/normalized URL
+- `id` - The extracted resource ID
+
+**LinkHandlerFactory** - Abstract factory for creating LinkHandler instances from URLs or IDs. This is the base class for all link handler factories.
+
+**ListLinkHandler** - Extends LinkHandler to support filtered lists with:
+- `contentFilters` - List of content type filters (e.g., "videos", "playlists")
+- `sortFilter` - Sort order filter (e.g., "recent", "popular")
+
+**SearchQueryHandler** - Specialized ListLinkHandler for search queries where the ID represents the search string.
+
+## How It Works
+
+The Link Handler system follows a factory pattern:
+
+1. **URL Parsing**: A URL is passed to a factory's `fromUrl()` method
+2. **Validation**: The factory checks if it can handle the URL via `acceptUrl()`
+3. **ID Extraction**: The factory extracts the resource ID from the URL
+4. **Handler Creation**: A LinkHandler object is created with the original URL, normalized URL, and ID
+
+### Example Flow
+
+```java
+// Starting with a URL
+String videoUrl = "https://youtube.com/watch?v=dQw4w9WgXcQ";
+
+// Factory validates and parses the URL
+LinkHandler handler = youtubeVideoFactory.fromUrl(videoUrl);
+
+// Now you can access:
+handler.getUrl();          // Normalized URL
+handler.getId();           // "dQw4w9WgXcQ"
+handler.getOriginalUrl();  // Original input URL
+```
+
+## Factory Types
+
+### LinkHandlerFactory
+
+The base factory for simple resources like videos, channels, or playlists. Use this when you only need to handle basic URL-to-ID conversion.
+
+**Use cases**:
+- Video URLs
+- Channel URLs
+- Playlist URLs
+- Any single resource without filtering
+
+### ListLinkHandlerFactory
+
+Extends LinkHandlerFactory to support content and sort filters. Use this for resources that return lists of items with optional filtering.
+
+**Use cases**:
+- Channel tabs (videos, playlists, shorts)
+- Kiosk pages (trending, top rated)
+- Category pages
+- Any list that supports filtering/sorting
+
+### SearchQueryHandlerFactory
+
+Specialized for search functionality. The ID field represents the search query string.
+
+**Use cases**:
+- Search pages
+- Search suggestions
+- Any query-based content
+
+## Google Redirect Handling
+
+The Link Handler system automatically handles Google search redirects. When a URL is processed through `fromUrl()`, it's automatically polished using `Utils.followGoogleRedirectIfNeeded()` to extract the actual destination URL.
+
+## Implementation Guidelines
+
+When implementing a new service, you need to create concrete factory classes:
+
+1. **Override required abstract methods**:
+   - `getId(String url)` - Extract ID from URL
+   - `getUrl(String id)` - Construct URL from ID
+   - `onAcceptUrl(String url)` - Validate if URL is supported
+
+2. **For ListLinkHandlerFactory, also override**:
+   - `getUrl(String id, List<String> contentFilter, String sortFilter)`
+   - Optionally: `getAvailableContentFilter()` and `getAvailableSortFilter()`
+
+3. **For SearchQueryHandlerFactory, also override**:
+   - `getUrl(String query, List<String> contentFilter, String sortFilter)`
+   - Optionally: `getSearchString(String url)` to extract query from URL
+
+## Thread Safety
+
+LinkHandler instances are immutable and implement `Serializable`, making them safe to use across threads and suitable for caching or persistence.
+
+The `contentFilters` list in ListLinkHandler is wrapped with `Collections.unmodifiableList()` to ensure immutability.
+
+## Next Steps
+
+- [LinkHandlerFactory API](/api/link-handlers/link-handler-factory) - Detailed API reference
+- [ListLinkHandlerFactory API](/api/link-handlers/list-link-handler-factory) - List handler API
+- [SearchQueryHandlerFactory API](/api/link-handlers/search-query-handler-factory) - Search handler API

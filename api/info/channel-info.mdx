@@ -1,0 +1,406 @@
+---
+title: ChannelInfo
+description: API reference for the ChannelInfo class
+---
+
+## Overview
+
+The `ChannelInfo` class represents detailed information about a channel on a streaming service. It extends the `Info` base class and provides metadata about channels including avatars, banners, subscriber count, and channel tabs.
+
+## Static Methods
+
+### getInfo(String url)
+
+<ResponseField name="getInfo" type="ChannelInfo">
+  Extracts channel information from a URL.
+  
+  <Expandable title="parameters">
+    <ResponseField name="url" type="String" required>
+      The URL of the channel to extract information from
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(StreamingService service, String url)
+
+<ResponseField name="getInfo" type="ChannelInfo">
+  Extracts channel information from a URL using a specific service.
+  
+  <Expandable title="parameters">
+    <ResponseField name="service" type="StreamingService" required>
+      The streaming service to use for extraction
+    </ResponseField>
+    <ResponseField name="url" type="String" required>
+      The URL of the channel to extract
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(ChannelExtractor extractor)
+
+<ResponseField name="getInfo" type="ChannelInfo">
+  Extracts channel information from a ChannelExtractor instance.
+  
+  <Expandable title="parameters">
+    <ResponseField name="extractor" type="ChannelExtractor" required>
+      An extractor instance where fetchPage() was already called
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+## Fields
+
+### Inherited from Info
+
+<ResponseField name="serviceId" type="int">
+  The ID of the streaming service
+</ResponseField>
+
+<ResponseField name="id" type="String">
+  The unique identifier for this channel
+</ResponseField>
+
+<ResponseField name="url" type="String">
+  The cleaned URL of the channel
+</ResponseField>
+
+<ResponseField name="originalUrl" type="String">
+  The original URL used to start extraction
+</ResponseField>
+
+<ResponseField name="name" type="String">
+  The name of the channel
+</ResponseField>
+
+### Channel Visuals
+
+<ResponseField name="avatars" type="List<Image>" default="[]">
+  List of avatar/profile images for the channel in various resolutions
+</ResponseField>
+
+<ResponseField name="banners" type="List<Image>" default="[]">
+  List of banner images for the channel in various resolutions
+</ResponseField>
+
+### Channel Information
+
+<ResponseField name="description" type="String">
+  The description/about text of the channel
+</ResponseField>
+
+<ResponseField name="subscriberCount" type="long" default="-1">
+  The number of subscribers. Returns -1 if not available.
+</ResponseField>
+
+<ResponseField name="verified" type="boolean" default="false">
+  Whether the channel is verified by the platform
+</ResponseField>
+
+### Feed Information
+
+<ResponseField name="feedUrl" type="String">
+  The URL to the channel's RSS/Atom feed (if available)
+</ResponseField>
+
+### Parent Channel Information
+
+<ResponseField name="parentChannelName" type="String">
+  The name of the parent channel (for sub-channels)
+</ResponseField>
+
+<ResponseField name="parentChannelUrl" type="String">
+  The URL to the parent channel
+</ResponseField>
+
+<ResponseField name="parentChannelAvatars" type="List<Image>" default="[]">
+  List of parent channel avatar images
+</ResponseField>
+
+### Navigation and Content
+
+<ResponseField name="tabs" type="List<ListLinkHandler>" default="[]">
+  List of available tabs on the channel (e.g., Videos, Playlists, About)
+</ResponseField>
+
+<ResponseField name="tags" type="List<String>" default="[]">
+  List of tags associated with the channel
+</ResponseField>
+
+<ResponseField name="donationLinks" type="String[]">
+  Array of donation/support links for the channel
+</ResponseField>
+
+## Methods
+
+### Getters and Setters
+
+All fields have corresponding getter and setter methods following JavaBean conventions:
+
+#### Avatar Methods
+<ResponseField name="getAvatars" type="List<Image>">
+  Returns the list of avatar images
+</ResponseField>
+
+<ResponseField name="setAvatars" type="void">
+  Sets the avatar images
+  
+  <Expandable title="parameters">
+    <ResponseField name="avatars" type="List<Image>" required>
+      The list of avatar images
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Banner Methods
+<ResponseField name="getBanners" type="List<Image>">
+  Returns the list of banner images
+</ResponseField>
+
+<ResponseField name="setBanners" type="void">
+  Sets the banner images
+  
+  <Expandable title="parameters">
+    <ResponseField name="banners" type="List<Image>" required>
+      The list of banner images
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Description Methods
+<ResponseField name="getDescription" type="String">
+  Returns the channel description
+</ResponseField>
+
+<ResponseField name="setDescription" type="void">
+  Sets the channel description
+  
+  <Expandable title="parameters">
+    <ResponseField name="description" type="String" required>
+      The channel description
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Subscriber Methods
+<ResponseField name="getSubscriberCount" type="long">
+  Returns the subscriber count or -1 if not available
+</ResponseField>
+
+<ResponseField name="setSubscriberCount" type="void">
+  Sets the subscriber count
+  
+  <Expandable title="parameters">
+    <ResponseField name="subscriberCount" type="long" required>
+      The subscriber count
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Verification Methods
+<ResponseField name="isVerified" type="boolean">
+  Returns whether the channel is verified
+</ResponseField>
+
+<ResponseField name="setVerified" type="void">
+  Sets the verification status
+  
+  <Expandable title="parameters">
+    <ResponseField name="verified" type="boolean" required>
+      The verification status
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Feed Methods
+<ResponseField name="getFeedUrl" type="String">
+  Returns the feed URL
+</ResponseField>
+
+<ResponseField name="setFeedUrl" type="void">
+  Sets the feed URL
+  
+  <Expandable title="parameters">
+    <ResponseField name="feedUrl" type="String" required>
+      The feed URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Parent Channel Methods
+<ResponseField name="getParentChannelName" type="String">
+  Returns the parent channel name
+</ResponseField>
+
+<ResponseField name="setParentChannelName" type="void">
+  Sets the parent channel name
+  
+  <Expandable title="parameters">
+    <ResponseField name="parentChannelName" type="String" required>
+      The parent channel name
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getParentChannelUrl" type="String">
+  Returns the parent channel URL
+</ResponseField>
+
+<ResponseField name="setParentChannelUrl" type="void">
+  Sets the parent channel URL
+  
+  <Expandable title="parameters">
+    <ResponseField name="parentChannelUrl" type="String" required>
+      The parent channel URL
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="getParentChannelAvatars" type="List<Image>">
+  Returns the parent channel avatars
+</ResponseField>
+
+<ResponseField name="setParentChannelAvatars" type="void">
+  Sets the parent channel avatars
+  
+  <Expandable title="parameters">
+    <ResponseField name="parentChannelAvatars" type="List<Image>" required>
+      The parent channel avatars
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Tab Methods
+<ResponseField name="getTabs" type="List<ListLinkHandler>">
+  Returns the list of channel tabs
+</ResponseField>
+
+<ResponseField name="setTabs" type="void">
+  Sets the channel tabs
+  
+  <Expandable title="parameters">
+    <ResponseField name="tabs" type="List<ListLinkHandler>" required>
+      The list of tabs
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Tag Methods
+<ResponseField name="getTags" type="List<String>">
+  Returns the list of channel tags
+</ResponseField>
+
+<ResponseField name="setTags" type="void">
+  Sets the channel tags
+  
+  <Expandable title="parameters">
+    <ResponseField name="tags" type="List<String>" required>
+      The list of tags
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+#### Donation Methods
+<ResponseField name="getDonationLinks" type="String[]">
+  Returns the array of donation links
+</ResponseField>
+
+<ResponseField name="setDonationLinks" type="void">
+  Sets the donation links
+  
+  <Expandable title="parameters">
+    <ResponseField name="donationLinks" type="String[]" required>
+      The array of donation links
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Inherited Methods from Info
+
+<ResponseField name="getServiceId" type="int">
+  Returns the service ID
+</ResponseField>
+
+<ResponseField name="getService" type="StreamingService">
+  Returns the StreamingService instance for this info object
+</ResponseField>
+
+<ResponseField name="getId" type="String">
+  Returns the unique identifier
+</ResponseField>
+
+<ResponseField name="getUrl" type="String">
+  Returns the cleaned URL
+</ResponseField>
+
+<ResponseField name="getOriginalUrl" type="String">
+  Returns the original URL used for extraction
+</ResponseField>
+
+<ResponseField name="getName" type="String">
+  Returns the channel name
+</ResponseField>
+
+<ResponseField name="getErrors" type="List<Throwable>">
+  Returns a list of non-fatal errors that occurred during extraction
+</ResponseField>
+
+<ResponseField name="addError" type="void">
+  Adds an error to the error list
+  
+  <Expandable title="parameters">
+    <ResponseField name="throwable" type="Throwable" required>
+      The error to add
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Usage
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.channel.ChannelInfo;
+import org.schabi.newpipe.extractor.Image;
+
+// Initialize NewPipe
+NewPipe.init(DownloaderFactory.getDownloader());
+
+// Extract channel information
+ChannelInfo channelInfo = ChannelInfo.getInfo("https://www.youtube.com/c/example");
+
+// Access channel properties
+String channelName = channelInfo.getName();
+long subscriberCount = channelInfo.getSubscriberCount();
+boolean isVerified = channelInfo.isVerified();
+String description = channelInfo.getDescription();
+
+// Get channel visuals
+List<Image> avatars = channelInfo.getAvatars();
+List<Image> banners = channelInfo.getBanners();
+
+// Access channel tabs
+List<ListLinkHandler> tabs = channelInfo.getTabs();
+for (ListLinkHandler tab : tabs) {
+    System.out.println("Tab: " + tab.getUrl());
+}
+
+// Get parent channel info (for sub-channels)
+String parentName = channelInfo.getParentChannelName();
+if (parentName != null) {
+    System.out.println("Parent channel: " + parentName);
+}
+```

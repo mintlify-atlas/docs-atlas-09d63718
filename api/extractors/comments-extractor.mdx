@@ -1,0 +1,342 @@
+---
+title: CommentsExtractor
+description: API reference for CommentsExtractor class - extracts comments from videos and streams
+---
+
+## Overview
+
+The `CommentsExtractor` class extracts comments from videos and streams on streaming services. It extends `ListExtractor<CommentsInfoItem>` and provides methods to retrieve paginated comments and metadata about comment availability.
+
+**Package:** `org.schabi.newpipe.extractor.comments`
+
+**Extends:** `ListExtractor<CommentsInfoItem>`
+
+## Constructor
+
+<ParamField path="service" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="uiHandler" type="ListLinkHandler" required>
+  The list link handler containing URL information for the commented content
+</ParamField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId() throws ParsingException
+```
+
+Returns the unique identifier for the content being commented on.
+
+<ResponseField name="return" type="String">
+  The content's unique ID
+</ResponseField>
+
+### getName()
+
+```java
+public String getName() throws ParsingException
+```
+
+Returns the name for this comments section.
+
+<ResponseField name="return" type="String">
+  Always returns "Comments"
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the URL of the content being commented on.
+
+<ResponseField name="return" type="String">
+  The content URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the comments page. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## List Extraction Methods (Inherited from ListExtractor)
+
+### getInitialPage()
+
+```java
+public abstract InfoItemsPage<CommentsInfoItem> getInitialPage() throws IOException, ExtractionException
+```
+
+Returns the first page of comments.
+
+<ResponseField name="return" type="InfoItemsPage<CommentsInfoItem>">
+  Page object containing initial comments and next page reference
+</ResponseField>
+
+### getPage()
+
+```java
+public abstract InfoItemsPage<CommentsInfoItem> getPage(Page page) throws IOException, ExtractionException
+```
+
+Returns a specific page of comments.
+
+<ParamField path="page" type="Page" required>
+  The page reference obtained from a previous page's `getNextPage()` method
+</ParamField>
+
+<ResponseField name="return" type="InfoItemsPage<CommentsInfoItem>">
+  Page object containing comments and next page reference
+</ResponseField>
+
+## Comments-Specific Methods
+
+### isCommentsDisabled()
+
+```java
+public boolean isCommentsDisabled() throws ExtractionException
+```
+
+Returns whether comments are disabled for this content.
+
+<Tip>
+**Experimental Method:** This method is experimental and may be removed or changed in future releases.
+</Tip>
+
+<ResponseField name="return" type="boolean">
+  `true` if comments are disabled, `false` otherwise (default)
+</ResponseField>
+
+### getCommentsCount()
+
+```java
+public int getCommentsCount() throws ExtractionException
+```
+
+Returns the total number of comments.
+
+<ResponseField name="return" type="int">
+  Total comment count, or -1 if unavailable
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+CommentsExtractor extractor = service.getCommentsExtractor(
+    "https://youtube.com/watch?v=dQw4w9WgXcQ"
+);
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Check if comments are available
+if (extractor.isCommentsDisabled()) {
+    System.out.println("Comments are disabled");
+    return;
+}
+
+// Get comment count
+int totalComments = extractor.getCommentsCount();
+System.out.println("Total comments: " + totalComments);
+
+// Get first page of comments
+InfoItemsPage<CommentsInfoItem> initialPage = extractor.getInitialPage();
+List<CommentsInfoItem> comments = initialPage.getItems();
+
+for (CommentsInfoItem comment : comments) {
+    System.out.println("Author: " + comment.getUploaderName());
+    System.out.println("Text: " + comment.getCommentText());
+    System.out.println("Likes: " + comment.getLikeCount());
+    System.out.println("---");
+}
+
+// Paginate through comments
+Page nextPage = initialPage.getNextPage();
+while (nextPage != null) {
+    InfoItemsPage<CommentsInfoItem> page = extractor.getPage(nextPage);
+    // Process comments on this page...
+    nextPage = page.getNextPage();
+}
+```
+
+## Loading Comment Replies
+
+```java
+// Get a comment that has replies
+CommentsInfoItem comment = comments.get(0);
+
+if (comment.getReplies() != null) {
+    // Get the replies page
+    Page repliesPage = comment.getReplies();
+    InfoItemsPage<CommentsInfoItem> replies = extractor.getPage(repliesPage);
+    
+    for (CommentsInfoItem reply : replies.getItems()) {
+        System.out.println("Reply from: " + reply.getUploaderName());
+        System.out.println("Reply text: " + reply.getCommentText());
+    }
+}
+```
+
+## CommentsInfoItem Properties
+
+Each `CommentsInfoItem` in the results contains:
+
+<ResponseField name="commentId" type="String">
+  Unique identifier for the comment
+</ResponseField>
+
+<ResponseField name="commentText" type="String">
+  The comment text content
+</ResponseField>
+
+<ResponseField name="uploaderName" type="String">
+  Name of the comment author
+</ResponseField>
+
+<ResponseField name="uploaderUrl" type="String">
+  URL to the comment author's channel
+</ResponseField>
+
+<ResponseField name="uploaderAvatars" type="List<Image>">
+  Author's profile pictures
+</ResponseField>
+
+<ResponseField name="likeCount" type="int">
+  Number of likes on the comment
+</ResponseField>
+
+<ResponseField name="textualUploadDate" type="String">
+  Original date string as provided by the service
+</ResponseField>
+
+<ResponseField name="uploadDate" type="DateWrapper">
+  Parsed upload date
+</ResponseField>
+
+<ResponseField name="replies" type="Page">
+  Page reference to load comment replies, or null if no replies
+</ResponseField>
+
+<ResponseField name="repliesCount" type="int">
+  Number of replies to this comment
+</ResponseField>
+
+<ResponseField name="isPinned" type="boolean">
+  Whether the comment is pinned
+</ResponseField>
+
+<ResponseField name="isUploaderVerified" type="boolean">
+  Whether the comment author is verified
+</ResponseField>
+
+<ResponseField name="isHeartedByUploader" type="boolean">
+  Whether the comment was hearted by the content creator
+</ResponseField>
+
+## InfoItemsPage Object
+
+The `InfoItemsPage` returned by `getInitialPage()` and `getPage()` contains:
+
+<ResponseField name="items" type="List<CommentsInfoItem>">
+  The list of comments on this page
+</ResponseField>
+
+<ResponseField name="nextPage" type="Page">
+  Reference to the next page, or null if this is the last page
+</ResponseField>
+
+<ResponseField name="errors" type="List<Throwable>">
+  Any errors that occurred during extraction of this page
+</ResponseField>
+
+## Notes
+
+- Always call `fetchPage()` before accessing comments
+- Use `isCommentsDisabled()` to check if comments are available before trying to extract them
+- The `getCommentsCount()` method may return -1 if the service doesn't provide the total count
+- Comments can be nested (replies to comments), accessed via the `getReplies()` method on individual comments
+- The `isCommentsDisabled()` method is marked as experimental and may change in future versions
+- Some services may not support all comment features (likes, replies, pinning, etc.)

@@ -1,0 +1,348 @@
+---
+title: StreamInfo
+description: API reference for the StreamInfo class
+---
+
+## Overview
+
+The `StreamInfo` class represents detailed information about a video or audio stream. It extends the `Info` base class and provides comprehensive metadata about streams, including video/audio formats, uploader information, statistics, and additional metadata.
+
+## Static Methods
+
+### getInfo(String url)
+
+<ResponseField name="getInfo" type="StreamInfo">
+  Extracts stream information from a URL.
+  
+  <Expandable title="parameters">
+    <ResponseField name="url" type="String" required>
+      The URL of the stream to extract information from
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(StreamingService service, String url)
+
+<ResponseField name="getInfo" type="StreamInfo">
+  Extracts stream information from a URL using a specific service.
+  
+  <Expandable title="parameters">
+    <ResponseField name="service" type="StreamingService" required>
+      The streaming service to use for extraction
+    </ResponseField>
+    <ResponseField name="url" type="String" required>
+      The URL of the stream to extract
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+### getInfo(StreamExtractor extractor)
+
+<ResponseField name="getInfo" type="StreamInfo">
+  Extracts stream information from a StreamExtractor instance.
+  
+  <Expandable title="parameters">
+    <ResponseField name="extractor" type="StreamExtractor" required>
+      An extractor instance where fetchPage() was already called
+    </ResponseField>
+  </Expandable>
+  
+  <Expandable title="throws">
+    - `IOException` - If a network error occurs
+    - `ExtractionException` - If extraction fails
+  </Expandable>
+</ResponseField>
+
+## Fields
+
+### Inherited from Info
+
+<ResponseField name="serviceId" type="int">
+  The ID of the streaming service
+</ResponseField>
+
+<ResponseField name="id" type="String">
+  The unique identifier for this stream (e.g., for YouTube: "RER5qCTzZ7")
+</ResponseField>
+
+<ResponseField name="url" type="String">
+  The cleaned URL of the stream
+</ResponseField>
+
+<ResponseField name="originalUrl" type="String">
+  The original URL used to start extraction
+</ResponseField>
+
+<ResponseField name="name" type="String">
+  The name/title of the stream
+</ResponseField>
+
+### Stream Type and Basic Info
+
+<ResponseField name="streamType" type="StreamType">
+  The type of stream. Possible values:
+  - `VIDEO_STREAM` - Normal video with audio
+  - `AUDIO_STREAM` - Audio-only stream
+  - `LIVE_STREAM` - Live video stream
+  - `AUDIO_LIVE_STREAM` - Live audio stream
+  - `POST_LIVE_STREAM` - Recently ended live video
+  - `POST_LIVE_AUDIO_STREAM` - Recently ended live audio
+</ResponseField>
+
+<ResponseField name="ageLimit" type="int">
+  The age restriction for this stream
+</ResponseField>
+
+<ResponseField name="duration" type="long" default="-1">
+  The duration of the stream in seconds. Returns -1 if not available.
+</ResponseField>
+
+### Media Information
+
+<ResponseField name="thumbnails" type="List<Image>" default="[]">
+  List of thumbnail images for the stream
+</ResponseField>
+
+<ResponseField name="description" type="Description">
+  The description of the stream
+</ResponseField>
+
+### Stream URLs and Formats
+
+<ResponseField name="videoStreams" type="List<VideoStream>" default="[]">
+  List of available video streams (usually with audio)
+</ResponseField>
+
+<ResponseField name="audioStreams" type="List<AudioStream>" default="[]">
+  List of available audio-only streams
+</ResponseField>
+
+<ResponseField name="videoOnlyStreams" type="List<VideoStream>" default="[]">
+  List of available video-only streams (no audio)
+</ResponseField>
+
+<ResponseField name="dashMpdUrl" type="String">
+  The URL to the DASH manifest for adaptive streaming (empty string by default)
+</ResponseField>
+
+<ResponseField name="hlsUrl" type="String">
+  The URL to the HLS manifest for adaptive streaming (empty string by default)
+</ResponseField>
+
+<ResponseField name="subtitles" type="List<SubtitlesStream>" default="[]">
+  List of available subtitle tracks
+</ResponseField>
+
+### Uploader Information
+
+<ResponseField name="uploaderName" type="String">
+  The name of the uploader/channel (empty string by default)
+</ResponseField>
+
+<ResponseField name="uploaderUrl" type="String">
+  The URL to the uploader's channel (empty string by default)
+</ResponseField>
+
+<ResponseField name="uploaderAvatars" type="List<Image>" default="[]">
+  List of uploader avatar images
+</ResponseField>
+
+<ResponseField name="uploaderVerified" type="boolean" default="false">
+  Whether the uploader is verified
+</ResponseField>
+
+<ResponseField name="uploaderSubscriberCount" type="long" default="-1">
+  The number of subscribers the uploader has. Returns -1 if not available.
+</ResponseField>
+
+### Sub-Channel Information
+
+<ResponseField name="subChannelName" type="String">
+  The name of the sub-channel (empty string by default, if applicable)
+</ResponseField>
+
+<ResponseField name="subChannelUrl" type="String">
+  The URL to the sub-channel (empty string by default)
+</ResponseField>
+
+<ResponseField name="subChannelAvatars" type="List<Image>" default="[]">
+  List of sub-channel avatar images
+</ResponseField>
+
+### Statistics
+
+<ResponseField name="viewCount" type="long" default="-1">
+  The number of views. Returns -1 if not available.
+</ResponseField>
+
+<ResponseField name="likeCount" type="long" default="-1">
+  The number of likes. Returns -1 if not available.
+</ResponseField>
+
+<ResponseField name="dislikeCount" type="long" default="-1">
+  The number of dislikes. Returns -1 if not available.
+</ResponseField>
+
+### Upload Date
+
+<ResponseField name="textualUploadDate" type="String">
+  The upload date as a text string (e.g., "2 days ago")
+</ResponseField>
+
+<ResponseField name="uploadDate" type="DateWrapper">
+  The parsed upload date
+</ResponseField>
+
+### Additional Metadata
+
+<ResponseField name="host" type="String">
+  The host/platform of the stream (empty string by default)
+</ResponseField>
+
+<ResponseField name="privacy" type="StreamExtractor.Privacy">
+  The privacy setting of the stream
+</ResponseField>
+
+<ResponseField name="category" type="String">
+  The category of the stream (empty string by default)
+</ResponseField>
+
+<ResponseField name="licence" type="String">
+  The license information for the stream (empty string by default)
+</ResponseField>
+
+<ResponseField name="language" type="Locale">
+  The language of the stream content
+</ResponseField>
+
+<ResponseField name="tags" type="List<String>" default="[]">
+  List of tags associated with the stream
+</ResponseField>
+
+<ResponseField name="supportInfo" type="String">
+  Information about how to support the creator (empty string by default)
+</ResponseField>
+
+### Playback Features
+
+<ResponseField name="startPosition" type="long" default="0">
+  The starting position/timestamp in seconds
+</ResponseField>
+
+<ResponseField name="streamSegments" type="List<StreamSegment>" default="[]">
+  List of stream segments/chapters
+</ResponseField>
+
+<ResponseField name="previewFrames" type="List<Frameset>" default="[]">
+  Preview frames for storyboard/seekbar thumbnail previews
+</ResponseField>
+
+### Related Content
+
+<ResponseField name="relatedItems" type="List<InfoItem>" default="[]">
+  List of related streams/videos
+</ResponseField>
+
+<ResponseField name="metaInfo" type="List<MetaInfo>" default="[]">
+  Additional metadata information
+</ResponseField>
+
+### Content Classification
+
+<ResponseField name="shortFormContent" type="boolean" default="false">
+  Whether this is short-form content (e.g., YouTube Shorts)
+</ResponseField>
+
+<ResponseField name="contentAvailability" type="ContentAvailability" default="AVAILABLE">
+  The availability status of the content
+</ResponseField>
+
+## Methods
+
+### Getters and Setters
+
+All fields have corresponding getter and setter methods following JavaBean conventions:
+
+- `getStreamType()` / `setStreamType(StreamType)`
+- `getThumbnails()` / `setThumbnails(List<Image>)`
+- `getDuration()` / `setDuration(long)`
+- `getAgeLimit()` / `setAgeLimit(int)`
+- And so on for all fields listed above
+
+### Inherited Methods from Info
+
+<ResponseField name="getServiceId" type="int">
+  Returns the service ID
+</ResponseField>
+
+<ResponseField name="getService" type="StreamingService">
+  Returns the StreamingService instance for this info object
+</ResponseField>
+
+<ResponseField name="getId" type="String">
+  Returns the unique identifier
+</ResponseField>
+
+<ResponseField name="getUrl" type="String">
+  Returns the cleaned URL
+</ResponseField>
+
+<ResponseField name="getOriginalUrl" type="String">
+  Returns the original URL used for extraction
+</ResponseField>
+
+<ResponseField name="getName" type="String">
+  Returns the name/title
+</ResponseField>
+
+<ResponseField name="getErrors" type="List<Throwable>">
+  Returns a list of non-fatal errors that occurred during extraction
+</ResponseField>
+
+<ResponseField name="addError" type="void">
+  Adds an error to the error list
+  
+  <Expandable title="parameters">
+    <ResponseField name="throwable" type="Throwable" required>
+      The error to add
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Usage
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+
+// Initialize NewPipe
+NewPipe.init(DownloaderFactory.getDownloader());
+
+// Extract stream information
+StreamInfo streamInfo = StreamInfo.getInfo("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+
+// Access stream properties
+String title = streamInfo.getName();
+long duration = streamInfo.getDuration();
+String uploaderName = streamInfo.getUploaderName();
+long viewCount = streamInfo.getViewCount();
+
+// Get available streams
+List<VideoStream> videoStreams = streamInfo.getVideoStreams();
+List<AudioStream> audioStreams = streamInfo.getAudioStreams();
+
+// Check stream type
+if (streamInfo.getStreamType() == StreamType.LIVE_STREAM) {
+    System.out.println("This is a live stream");
+}
+```

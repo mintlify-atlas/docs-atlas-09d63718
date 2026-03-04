@@ -1,0 +1,277 @@
+---
+title: "ServiceList"
+description: "Registry of all supported streaming services"
+---
+
+## Overview
+
+The `ServiceList` class provides access to all streaming services supported by NewPipe Extractor. It contains static instances of each service and a method to retrieve all services as a list.
+
+This class is used internally by `NewPipe` to provide service lookup functionality.
+
+## Supported Services
+
+### YouTube
+
+YouTube service instance.
+
+<ResponseField name="type" type="YoutubeService">
+  Static instance with service ID 0
+</ResponseField>
+
+```java
+StreamingService youtube = ServiceList.YouTube;
+System.out.println("Service: " + youtube.getServiceInfo().getName());
+System.out.println("ID: " + youtube.getServiceId()); // 0
+```
+
+### SoundCloud
+
+SoundCloud service instance.
+
+<ResponseField name="type" type="SoundcloudService">
+  Static instance with service ID 1
+</ResponseField>
+
+```java
+StreamingService soundcloud = ServiceList.SoundCloud;
+System.out.println("Service: " + soundcloud.getServiceInfo().getName());
+System.out.println("ID: " + soundcloud.getServiceId()); // 1
+```
+
+### MediaCCC
+
+Media.ccc.de service instance.
+
+<ResponseField name="type" type="MediaCCCService">
+  Static instance with service ID 2
+</ResponseField>
+
+```java
+StreamingService mediaCCC = ServiceList.MediaCCC;
+System.out.println("Service: " + mediaCCC.getServiceInfo().getName());
+System.out.println("ID: " + mediaCCC.getServiceId()); // 2
+```
+
+### PeerTube
+
+PeerTube service instance.
+
+<ResponseField name="type" type="PeertubeService">
+  Static instance with service ID 3
+</ResponseField>
+
+```java
+StreamingService peertube = ServiceList.PeerTube;
+System.out.println("Service: " + peertube.getServiceInfo().getName());
+System.out.println("ID: " + peertube.getServiceId()); // 3
+```
+
+### Bandcamp
+
+Bandcamp service instance.
+
+<ResponseField name="type" type="BandcampService">
+  Static instance with service ID 4
+</ResponseField>
+
+```java
+StreamingService bandcamp = ServiceList.Bandcamp;
+System.out.println("Service: " + bandcamp.getServiceInfo().getName());
+System.out.println("ID: " + bandcamp.getServiceId()); // 4
+```
+
+## Methods
+
+### all()
+
+Get all supported streaming services.
+
+<ResponseField name="return" type="List<StreamingService>">
+  An unmodifiable list of all supported services
+</ResponseField>
+
+```java
+List<StreamingService> allServices = ServiceList.all();
+
+for (StreamingService service : allServices) {
+    System.out.println("ID: " + service.getServiceId());
+    System.out.println("Name: " + service.getServiceInfo().getName());
+    System.out.println("Base URL: " + service.getBaseUrl());
+    System.out.println("Capabilities: " + 
+        service.getServiceInfo().getMediaCapabilities());
+    System.out.println("---");
+}
+```
+
+## Service IDs
+
+Each service has a unique ID assigned:
+
+| Service | ID |
+|---------|----|
+| YouTube | 0  |
+| SoundCloud | 1  |
+| MediaCCC | 2  |
+| PeerTube | 3  |
+| Bandcamp | 4  |
+
+## Usage Examples
+
+### Iterate Through All Services
+
+```java
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.StreamingService;
+
+public class ListAllServices {
+    public static void main(String[] args) {
+        List<StreamingService> services = ServiceList.all();
+        
+        System.out.println("Available services: " + services.size());
+        
+        for (StreamingService service : services) {
+            System.out.println("\n" + service.getServiceInfo().getName());
+            System.out.println("  ID: " + service.getServiceId());
+            System.out.println("  URL: " + service.getBaseUrl());
+            
+            // Check capabilities
+            Set<StreamingService.ServiceInfo.MediaCapability> caps = 
+                service.getServiceInfo().getMediaCapabilities();
+            
+            System.out.print("  Capabilities: ");
+            if (caps.contains(StreamingService.ServiceInfo.MediaCapability.VIDEO)) {
+                System.out.print("VIDEO ");
+            }
+            if (caps.contains(StreamingService.ServiceInfo.MediaCapability.AUDIO)) {
+                System.out.print("AUDIO ");
+            }
+            if (caps.contains(StreamingService.ServiceInfo.MediaCapability.LIVE)) {
+                System.out.print("LIVE ");
+            }
+            if (caps.contains(StreamingService.ServiceInfo.MediaCapability.COMMENTS)) {
+                System.out.print("COMMENTS");
+            }
+            System.out.println();
+        }
+    }
+}
+```
+
+### Direct Service Access
+
+```java
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.stream.StreamExtractor;
+
+public class DirectServiceAccess {
+    public static void main(String[] args) throws Exception {
+        // Initialize NewPipe
+        NewPipe.init(new DownloaderTestImpl());
+        
+        // Access YouTube directly
+        StreamExtractor extractor = ServiceList.YouTube.getStreamExtractor(
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        );
+        extractor.fetchPage();
+        System.out.println("YouTube video: " + extractor.getName());
+        
+        // Access SoundCloud directly
+        SearchExtractor search = ServiceList.SoundCloud.getSearchExtractor("music");
+        search.fetchPage();
+        System.out.println("SoundCloud results: " + 
+            search.getInitialPage().getItems().size());
+    }
+}
+```
+
+### Check Service Capabilities
+
+```java
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.StreamingService.ServiceInfo.MediaCapability;
+
+public class CheckCapabilities {
+    public static void main(String[] args) {
+        // Check which services support comments
+        for (StreamingService service : ServiceList.all()) {
+            Set<MediaCapability> caps = 
+                service.getServiceInfo().getMediaCapabilities();
+            
+            if (caps.contains(MediaCapability.COMMENTS)) {
+                System.out.println(service.getServiceInfo().getName() + 
+                    " supports comments");
+            }
+        }
+        
+        // Check which services support live streaming
+        for (StreamingService service : ServiceList.all()) {
+            Set<MediaCapability> caps = 
+                service.getServiceInfo().getMediaCapabilities();
+            
+            if (caps.contains(MediaCapability.LIVE)) {
+                System.out.println(service.getServiceInfo().getName() + 
+                    " supports live streaming");
+            }
+        }
+    }
+}
+```
+
+### Find Service by Name
+
+```java
+import org.schabi.newpipe.extractor.ServiceList;
+import org.schabi.newpipe.extractor.StreamingService;
+
+public class FindServiceByName {
+    public static StreamingService findService(String name) {
+        return ServiceList.all().stream()
+            .filter(s -> s.getServiceInfo().getName().equalsIgnoreCase(name))
+            .findFirst()
+            .orElse(null);
+    }
+    
+    public static void main(String[] args) {
+        StreamingService youtube = findService("YouTube");
+        if (youtube != null) {
+            System.out.println("Found: " + youtube.getServiceInfo().getName());
+            System.out.println("ID: " + youtube.getServiceId());
+        }
+    }
+}
+```
+
+## Notes
+
+- The list returned by `all()` is unmodifiable
+- Service instances are created at class initialization and reused
+- When adding new services, they should be appended to the list with the next sequential ID
+- Service IDs must be unique and should not change once assigned
+
+## Integration with NewPipe
+
+The `ServiceList` class is primarily used through the `NewPipe` class:
+
+```java
+// Instead of using ServiceList directly:
+List<StreamingService> services = ServiceList.all();
+
+// It's recommended to use NewPipe methods:
+List<StreamingService> services = NewPipe.getServices();
+StreamingService youtube = NewPipe.getService(0);
+StreamingService soundcloud = NewPipe.getService("SoundCloud");
+```
+
+However, direct access to `ServiceList` constants can be useful when you know exactly which service you need:
+
+```java
+// Direct access when you know the service
+StreamExtractor extractor = ServiceList.YouTube.getStreamExtractor(url);
+
+// vs using NewPipe (requires exception handling)
+StreamingService service = NewPipe.getService("YouTube");
+StreamExtractor extractor = service.getStreamExtractor(url);
+```

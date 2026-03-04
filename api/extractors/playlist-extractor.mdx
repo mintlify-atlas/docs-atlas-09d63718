@@ -1,0 +1,376 @@
+---
+title: PlaylistExtractor
+description: API reference for PlaylistExtractor class - extracts playlist and collection information
+---
+
+## Overview
+
+The `PlaylistExtractor` class extracts information about playlists and video collections from streaming services. It extends `ListExtractor<StreamInfoItem>` and provides methods to retrieve playlist metadata, uploader information, and paginated stream items.
+
+**Package:** `org.schabi.newpipe.extractor.playlist`
+
+**Extends:** `ListExtractor<StreamInfoItem>`
+
+## Constructor
+
+<ParamField path="service" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="linkHandler" type="ListLinkHandler" required>
+  The list link handler containing URL information for this playlist
+</ParamField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId() throws ParsingException
+```
+
+Returns the unique identifier for this playlist.
+
+<ResponseField name="return" type="String">
+  The playlist's unique ID
+</ResponseField>
+
+### getName()
+
+```java
+public abstract String getName() throws ParsingException
+```
+
+Returns the name/title of the playlist.
+
+<ResponseField name="return" type="String">
+  The playlist's title
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the cleaned URL for this playlist.
+
+<ResponseField name="return" type="String">
+  The playlist's URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided by the user.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the playlist page content. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## List Extraction Methods (Inherited from ListExtractor)
+
+### getInitialPage()
+
+```java
+public abstract InfoItemsPage<StreamInfoItem> getInitialPage() throws IOException, ExtractionException
+```
+
+Returns the first page of playlist items.
+
+<ResponseField name="return" type="InfoItemsPage<StreamInfoItem>">
+  Page object containing initial stream items and next page reference
+</ResponseField>
+
+### getPage()
+
+```java
+public abstract InfoItemsPage<StreamInfoItem> getPage(Page page) throws IOException, ExtractionException
+```
+
+Returns a specific page of playlist items.
+
+<ParamField path="page" type="Page" required>
+  The page reference obtained from a previous page's `getNextPage()` method
+</ParamField>
+
+<ResponseField name="return" type="InfoItemsPage<StreamInfoItem>">
+  Page object containing stream items and next page reference
+</ResponseField>
+
+## Playlist Information Methods
+
+### getDescription()
+
+```java
+public abstract Description getDescription() throws ParsingException
+```
+
+Returns the playlist description.
+
+<ResponseField name="return" type="Description">
+  The playlist description object
+</ResponseField>
+
+### getThumbnails()
+
+```java
+public List<Image> getThumbnails() throws ParsingException
+```
+
+Returns the playlist's thumbnail images.
+
+<ResponseField name="return" type="List<Image>">
+  List of thumbnail images, or empty list if unavailable
+</ResponseField>
+
+### getBanners()
+
+```java
+public List<Image> getBanners() throws ParsingException
+```
+
+Returns the playlist's banner images.
+
+<ResponseField name="return" type="List<Image>">
+  List of banner images, or empty list if unavailable
+</ResponseField>
+
+### getStreamCount()
+
+```java
+public abstract long getStreamCount() throws ParsingException
+```
+
+Returns the total number of streams in the playlist.
+
+<ResponseField name="return" type="long">
+  Total stream count, or -1 if unavailable
+</ResponseField>
+
+### getPlaylistType()
+
+```java
+public PlaylistInfo.PlaylistType getPlaylistType() throws ParsingException
+```
+
+Returns the type of playlist.
+
+<ResponseField name="return" type="PlaylistInfo.PlaylistType">
+  The playlist type enum value (defaults to NORMAL)
+</ResponseField>
+
+## Uploader Information Methods
+
+### getUploaderName()
+
+```java
+public abstract String getUploaderName() throws ParsingException
+```
+
+Returns the name of the playlist creator.
+
+<ResponseField name="return" type="String">
+  Creator's name
+</ResponseField>
+
+### getUploaderUrl()
+
+```java
+public abstract String getUploaderUrl() throws ParsingException
+```
+
+Returns the URL to the creator's channel.
+
+<ResponseField name="return" type="String">
+  Creator's channel URL
+</ResponseField>
+
+### getUploaderAvatars()
+
+```java
+public abstract List<Image> getUploaderAvatars() throws ParsingException
+```
+
+Returns the creator's avatar images.
+
+<ResponseField name="return" type="List<Image>">
+  List of uploader avatar images
+</ResponseField>
+
+### isUploaderVerified()
+
+```java
+public abstract boolean isUploaderVerified() throws ParsingException
+```
+
+Returns whether the playlist creator is verified.
+
+<ResponseField name="return" type="boolean">
+  `true` if verified, `false` otherwise
+</ResponseField>
+
+## Sub-Channel Methods
+
+### getSubChannelName()
+
+```java
+public String getSubChannelName() throws ParsingException
+```
+
+Returns the name of the sub-channel (if applicable).
+
+<ResponseField name="return" type="String">
+  Sub-channel name, or empty string if not applicable
+</ResponseField>
+
+### getSubChannelUrl()
+
+```java
+public String getSubChannelUrl() throws ParsingException
+```
+
+Returns the URL to the sub-channel.
+
+<ResponseField name="return" type="String">
+  Sub-channel URL, or empty string if not applicable
+</ResponseField>
+
+### getSubChannelAvatars()
+
+```java
+public List<Image> getSubChannelAvatars() throws ParsingException
+```
+
+Returns the sub-channel's avatar images.
+
+<ResponseField name="return" type="List<Image>">
+  List of sub-channel avatars, or empty list if not applicable
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+PlaylistExtractor extractor = service.getPlaylistExtractor("https://youtube.com/playlist?list=PLxxxxxx");
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Get playlist information
+String name = extractor.getName();
+Description description = extractor.getDescription();
+long streamCount = extractor.getStreamCount();
+
+// Get uploader info
+String uploaderName = extractor.getUploaderName();
+boolean verified = extractor.isUploaderVerified();
+
+// Get first page of items
+InfoItemsPage<StreamInfoItem> initialPage = extractor.getInitialPage();
+List<StreamInfoItem> items = initialPage.getItems();
+
+// Paginate through all items
+Page nextPage = initialPage.getNextPage();
+while (nextPage != null) {
+    InfoItemsPage<StreamInfoItem> page = extractor.getPage(nextPage);
+    items.addAll(page.getItems());
+    nextPage = page.getNextPage();
+}
+```
+
+## InfoItemsPage Object
+
+The `InfoItemsPage` returned by `getInitialPage()` and `getPage()` contains:
+
+<ResponseField name="items" type="List<StreamInfoItem>">
+  The list of stream items on this page
+</ResponseField>
+
+<ResponseField name="nextPage" type="Page">
+  Reference to the next page, or null if this is the last page
+</ResponseField>
+
+<ResponseField name="errors" type="List<Throwable>">
+  Any errors that occurred during extraction of this page
+</ResponseField>
+
+## Notes
+
+- Always call `fetchPage()` before accessing any playlist data
+- Use pagination methods to retrieve all playlist items efficiently
+- The `getStreamCount()` method may return -1 if the service doesn't provide the total count
+- Some services may not support all features (e.g., sub-channels, banners)

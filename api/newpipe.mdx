@@ -1,0 +1,294 @@
+---
+title: "NewPipe"
+description: "Main entry point for accessing streaming services and configuring the extractor"
+---
+
+## Overview
+
+The `NewPipe` class is the main entry point for the NewPipe Extractor library. It provides static methods to initialize the library, access streaming services, and configure localization settings.
+
+This class manages:
+- Initialization with a Downloader instance
+- Access to all supported streaming services
+- Localization and content country preferences
+- Service lookup by ID, name, or URL
+
+## Initialization
+
+### init()
+
+Initialize NewPipe with a downloader instance.
+
+<ParamField path="d" type="Downloader" required>
+  The downloader implementation to use for HTTP requests
+</ParamField>
+
+```java
+NewPipe.init(new DownloaderTestImpl());
+```
+
+### init() with Localization
+
+Initialize NewPipe with a downloader and localization.
+
+<ParamField path="d" type="Downloader" required>
+  The downloader implementation to use for HTTP requests
+</ParamField>
+
+<ParamField path="l" type="Localization" required>
+  The preferred localization for content
+</ParamField>
+
+```java
+NewPipe.init(new DownloaderTestImpl(), Localization.fromLocale(Locale.US));
+```
+
+### init() with Localization and ContentCountry
+
+Initialize NewPipe with full configuration.
+
+<ParamField path="d" type="Downloader" required>
+  The downloader implementation to use for HTTP requests
+</ParamField>
+
+<ParamField path="l" type="Localization" required>
+  The preferred localization for content
+</ParamField>
+
+<ParamField path="c" type="ContentCountry" required>
+  The preferred content country
+</ParamField>
+
+```java
+NewPipe.init(
+    new DownloaderTestImpl(),
+    new Localization("en", "US"),
+    new ContentCountry("US")
+);
+```
+
+## Service Access
+
+### getServices()
+
+Get all supported streaming services.
+
+<ResponseField name="return" type="List<StreamingService>">
+  A list of all available streaming services
+</ResponseField>
+
+```java
+List<StreamingService> services = NewPipe.getServices();
+for (StreamingService service : services) {
+    System.out.println(service.getServiceInfo().getName());
+}
+```
+
+### getService() by ID
+
+Get a specific streaming service by its ID.
+
+<ParamField path="serviceId" type="int" required>
+  The unique identifier of the service
+</ParamField>
+
+<ResponseField name="return" type="StreamingService">
+  The streaming service with the specified ID
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If no service exists with the given ID
+</ResponseField>
+
+```java
+try {
+    StreamingService youtube = NewPipe.getService(0);
+    System.out.println(youtube.getServiceInfo().getName());
+} catch (ExtractionException e) {
+    e.printStackTrace();
+}
+```
+
+### getService() by Name
+
+Get a specific streaming service by its name.
+
+<ParamField path="serviceName" type="String" required>
+  The name of the service (e.g., "YouTube", "SoundCloud")
+</ParamField>
+
+<ResponseField name="return" type="StreamingService">
+  The streaming service with the specified name
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If no service exists with the given name
+</ResponseField>
+
+```java
+try {
+    StreamingService youtube = NewPipe.getService("YouTube");
+    System.out.println("Service ID: " + youtube.getServiceId());
+} catch (ExtractionException e) {
+    e.printStackTrace();
+}
+```
+
+### getServiceByUrl()
+
+Determine which service can handle a given URL.
+
+<ParamField path="url" type="String" required>
+  The URL to check
+</ParamField>
+
+<ResponseField name="return" type="StreamingService">
+  The streaming service that can handle the URL
+</ResponseField>
+
+<ResponseField name="throws" type="ExtractionException">
+  If no service can handle the URL
+</ResponseField>
+
+```java
+try {
+    String url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    StreamingService service = NewPipe.getServiceByUrl(url);
+    System.out.println("URL handled by: " + service.getServiceInfo().getName());
+} catch (ExtractionException e) {
+    System.out.println("No service can handle this URL");
+}
+```
+
+## Downloader Management
+
+### getDownloader()
+
+Get the currently configured downloader instance.
+
+<ResponseField name="return" type="Downloader">
+  The active downloader instance
+</ResponseField>
+
+```java
+Downloader downloader = NewPipe.getDownloader();
+```
+
+## Localization Configuration
+
+### setupLocalization()
+
+Configure localization preferences.
+
+<ParamField path="thePreferredLocalization" type="Localization" required>
+  The preferred localization
+</ParamField>
+
+```java
+NewPipe.setupLocalization(new Localization("de", "DE"));
+```
+
+### setupLocalization() with ContentCountry
+
+Configure localization and content country preferences.
+
+<ParamField path="thePreferredLocalization" type="Localization" required>
+  The preferred localization
+</ParamField>
+
+<ParamField path="thePreferredContentCountry" type="ContentCountry">
+  The preferred content country (nullable)
+</ParamField>
+
+```java
+NewPipe.setupLocalization(
+    new Localization("fr", "FR"),
+    new ContentCountry("FR")
+);
+```
+
+### getPreferredLocalization()
+
+Get the current preferred localization.
+
+<ResponseField name="return" type="Localization">
+  The current preferred localization, or DEFAULT if not set
+</ResponseField>
+
+```java
+Localization locale = NewPipe.getPreferredLocalization();
+System.out.println("Language: " + locale.getLanguageCode());
+```
+
+### setPreferredLocalization()
+
+Set the preferred localization.
+
+<ParamField path="preferredLocalization" type="Localization" required>
+  The new preferred localization
+</ParamField>
+
+```java
+NewPipe.setPreferredLocalization(new Localization("es", "ES"));
+```
+
+### getPreferredContentCountry()
+
+Get the current preferred content country.
+
+<ResponseField name="return" type="ContentCountry">
+  The current preferred content country, or DEFAULT if not set
+</ResponseField>
+
+```java
+ContentCountry country = NewPipe.getPreferredContentCountry();
+System.out.println("Country: " + country.getCountryCode());
+```
+
+### setPreferredContentCountry()
+
+Set the preferred content country.
+
+<ParamField path="preferredContentCountry" type="ContentCountry" required>
+  The new preferred content country
+</ParamField>
+
+```java
+NewPipe.setPreferredContentCountry(new ContentCountry("GB"));
+```
+
+## Usage Example
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.localization.Localization;
+import org.schabi.newpipe.extractor.localization.ContentCountry;
+
+public class Example {
+    public static void main(String[] args) {
+        // Initialize NewPipe
+        NewPipe.init(new DownloaderTestImpl());
+        
+        // Configure localization
+        NewPipe.setupLocalization(
+            new Localization("en", "US"),
+            new ContentCountry("US")
+        );
+        
+        try {
+            // Get a service by URL
+            String videoUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+            StreamingService service = NewPipe.getServiceByUrl(videoUrl);
+            
+            // Get stream extractor
+            StreamExtractor extractor = service.getStreamExtractor(videoUrl);
+            extractor.fetchPage();
+            
+            System.out.println("Title: " + extractor.getName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```

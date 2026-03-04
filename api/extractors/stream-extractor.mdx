@@ -1,0 +1,684 @@
+---
+title: StreamExtractor
+description: API reference for StreamExtractor class - extracts video and audio stream information
+---
+
+## Overview
+
+The `StreamExtractor` class extracts information from video/audio streaming services. It extends the base `Extractor` class and provides methods to retrieve stream metadata, playback URLs, and related content.
+
+**Package:** `org.schabi.newpipe.extractor.stream`
+
+**Extends:** `Extractor`
+
+## Constructor
+
+<ParamField path="service" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="linkHandler" type="LinkHandler" required>
+  The link handler containing URL information for this stream
+</ParamField>
+
+## Constants
+
+<ResponseField name="NO_AGE_LIMIT" type="int" default="0">
+  Constant indicating no age restriction on the content
+</ResponseField>
+
+<ResponseField name="UNKNOWN_SUBSCRIBER_COUNT" type="long" default="-1">
+  Constant returned when uploader's subscriber count is unavailable
+</ResponseField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId() throws ParsingException
+```
+
+Returns the unique identifier for this stream.
+
+<ResponseField name="return" type="String">
+  The stream's unique ID
+</ResponseField>
+
+### getName()
+
+```java
+public abstract String getName() throws ParsingException
+```
+
+Returns the name/title of the stream.
+
+<ResponseField name="return" type="String">
+  The stream's title
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the cleaned URL for this stream.
+
+<ResponseField name="return" type="String">
+  The stream's URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided by the user.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the page content. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## Stream Metadata Methods
+
+### getThumbnails()
+
+```java
+public abstract List<Image> getThumbnails() throws ParsingException
+```
+
+Returns the thumbnail images for the stream.
+
+<ResponseField name="return" type="List<Image>">
+  List of thumbnail images in various resolutions
+</ResponseField>
+
+### getDescription()
+
+```java
+public Description getDescription() throws ParsingException
+```
+
+Returns the stream description.
+
+<ResponseField name="return" type="Description">
+  The description object, or `Description.EMPTY_DESCRIPTION` if not available
+</ResponseField>
+
+### getLength()
+
+```java
+public long getLength() throws ParsingException
+```
+
+Returns the duration of the stream in seconds.
+
+<ResponseField name="return" type="long">
+  Stream length in seconds, or 0 for livestreams
+</ResponseField>
+
+### getViewCount()
+
+```java
+public long getViewCount() throws ParsingException
+```
+
+Returns the number of views.
+
+<ResponseField name="return" type="long">
+  View count, or -1 if unavailable
+</ResponseField>
+
+### getLikeCount()
+
+```java
+public long getLikeCount() throws ParsingException
+```
+
+Returns the number of likes.
+
+<ResponseField name="return" type="long">
+  Like count, or -1 if unavailable
+</ResponseField>
+
+### getDislikeCount()
+
+```java
+public long getDislikeCount() throws ParsingException
+```
+
+Returns the number of dislikes.
+
+<ResponseField name="return" type="long">
+  Dislike count, or -1 if unavailable
+</ResponseField>
+
+### getAgeLimit()
+
+```java
+public int getAgeLimit() throws ParsingException
+```
+
+Returns the minimum age required to view the content.
+
+<ResponseField name="return" type="int">
+  Minimum age, or `NO_AGE_LIMIT` (0) if unrestricted
+</ResponseField>
+
+## Upload Date Methods
+
+### getTextualUploadDate()
+
+```java
+public String getTextualUploadDate() throws ParsingException
+```
+
+Returns the original textual date as provided by the service.
+
+<ResponseField name="return" type="String">
+  Original upload date string, or null for livestreams
+</ResponseField>
+
+### getUploadDate()
+
+```java
+public DateWrapper getUploadDate() throws ParsingException
+```
+
+Returns a parsed upload date.
+
+<ResponseField name="return" type="DateWrapper">
+  Parsed upload date, or null for livestreams
+</ResponseField>
+
+## Uploader Information Methods
+
+### getUploaderName()
+
+```java
+public abstract String getUploaderName() throws ParsingException
+```
+
+Returns the name of the content creator.
+
+<ResponseField name="return" type="String">
+  Uploader's name, or empty string if unavailable
+</ResponseField>
+
+### getUploaderUrl()
+
+```java
+public abstract String getUploaderUrl() throws ParsingException
+```
+
+Returns the URL to the uploader's channel page.
+
+<ResponseField name="return" type="String">
+  Uploader's channel URL, or empty string if unavailable
+</ResponseField>
+
+### getUploaderAvatars()
+
+```java
+public List<Image> getUploaderAvatars() throws ParsingException
+```
+
+Returns the uploader's profile pictures.
+
+<ResponseField name="return" type="List<Image>">
+  List of avatar images, or empty list if unavailable
+</ResponseField>
+
+### isUploaderVerified()
+
+```java
+public boolean isUploaderVerified() throws ParsingException
+```
+
+Returns whether the uploader is verified by the service.
+
+<ResponseField name="return" type="boolean">
+  `true` if verified, `false` otherwise
+</ResponseField>
+
+### getUploaderSubscriberCount()
+
+```java
+public long getUploaderSubscriberCount() throws ParsingException
+```
+
+Returns the subscriber count of the uploader.
+
+<ResponseField name="return" type="long">
+  Subscriber count, or `UNKNOWN_SUBSCRIBER_COUNT` (-1) if unavailable
+</ResponseField>
+
+## Sub-Channel Methods
+
+### getSubChannelName()
+
+```java
+public String getSubChannelName() throws ParsingException
+```
+
+Returns the name of the sub-channel (if applicable).
+
+<ResponseField name="return" type="String">
+  Sub-channel name, or empty string if not applicable
+</ResponseField>
+
+### getSubChannelUrl()
+
+```java
+public String getSubChannelUrl() throws ParsingException
+```
+
+Returns the URL to the sub-channel page.
+
+<ResponseField name="return" type="String">
+  Sub-channel URL, or empty string if not applicable
+</ResponseField>
+
+### getSubChannelAvatars()
+
+```java
+public List<Image> getSubChannelAvatars() throws ParsingException
+```
+
+Returns the sub-channel's avatar images.
+
+<ResponseField name="return" type="List<Image>">
+  List of sub-channel avatars, or empty list if unavailable
+</ResponseField>
+
+## Stream URL Methods
+
+### getAudioStreams()
+
+```java
+public abstract List<AudioStream> getAudioStreams() throws IOException, ExtractionException
+```
+
+Returns available audio-only streams.
+
+<ResponseField name="return" type="List<AudioStream>">
+  List of audio streams in various formats and qualities
+</ResponseField>
+
+### getVideoStreams()
+
+```java
+public abstract List<VideoStream> getVideoStreams() throws IOException, ExtractionException
+```
+
+Returns video streams that contain both video and audio.
+
+<ResponseField name="return" type="List<VideoStream>">
+  List of combined video/audio streams
+</ResponseField>
+
+### getVideoOnlyStreams()
+
+```java
+public abstract List<VideoStream> getVideoOnlyStreams() throws IOException, ExtractionException
+```
+
+Returns video-only streams without audio.
+
+<ResponseField name="return" type="List<VideoStream>">
+  List of video-only streams
+</ResponseField>
+
+### getDashMpdUrl()
+
+```java
+public String getDashMpdUrl() throws ParsingException
+```
+
+Returns the DASH MPD manifest URL.
+
+<ResponseField name="return" type="String">
+  DASH MPD URL, or empty string if unavailable
+</ResponseField>
+
+### getHlsUrl()
+
+```java
+public String getHlsUrl() throws ParsingException
+```
+
+Returns the HLS stream URL.
+
+<ResponseField name="return" type="String">
+  HLS URL, or empty string if unavailable
+</ResponseField>
+
+## Subtitle Methods
+
+### getSubtitlesDefault()
+
+```java
+public List<SubtitlesStream> getSubtitlesDefault() throws IOException, ExtractionException
+```
+
+Returns all available subtitle streams.
+
+<ResponseField name="return" type="List<SubtitlesStream>">
+  List of subtitle streams, or empty list if unavailable
+</ResponseField>
+
+### getSubtitles()
+
+```java
+public List<SubtitlesStream> getSubtitles(MediaFormat format) throws IOException, ExtractionException
+```
+
+Returns subtitle streams filtered by format.
+
+<ParamField path="format" type="MediaFormat" required>
+  The subtitle format to filter by
+</ParamField>
+
+<ResponseField name="return" type="List<SubtitlesStream>">
+  List of subtitle streams in the specified format
+</ResponseField>
+
+## Stream Type and Features
+
+### getStreamType()
+
+```java
+public abstract StreamType getStreamType() throws ParsingException
+```
+
+Returns the type of stream (video, audio, live, etc.).
+
+<ResponseField name="return" type="StreamType">
+  The stream type enum value
+</ResponseField>
+
+### getTimeStamp()
+
+```java
+public long getTimeStamp() throws ParsingException
+```
+
+Returns the timestamp position if the URL contains a time marker.
+
+<ResponseField name="return" type="long">
+  Timestamp in seconds, or 0 if no timestamp in URL
+</ResponseField>
+
+### isShortFormContent()
+
+```java
+public boolean isShortFormContent() throws ParsingException
+```
+
+Returns whether this is short-form content (like YouTube Shorts, TikTok).
+
+<ResponseField name="return" type="boolean">
+  `true` if short-form content, `false` otherwise
+</ResponseField>
+
+## Related Content Methods
+
+### getRelatedItems()
+
+```java
+public InfoItemsCollector<? extends InfoItem, ? extends InfoItemExtractor> getRelatedItems() throws IOException, ExtractionException
+```
+
+Returns suggested/related content items.
+
+<ResponseField name="return" type="InfoItemsCollector">
+  Collector containing related items, or null if unavailable
+</ResponseField>
+
+### getFrames()
+
+```java
+public List<Frameset> getFrames() throws ExtractionException
+```
+
+Returns preview frames for the stream (thumbnail timeline).
+
+<ResponseField name="return" type="List<Frameset>">
+  List of frame preview sets, or empty list if unavailable
+</ResponseField>
+
+### getStreamSegments()
+
+```java
+public List<StreamSegment> getStreamSegments() throws ParsingException
+```
+
+Returns chapter/segment information with timestamps.
+
+<ResponseField name="return" type="List<StreamSegment>">
+  List of stream segments, or empty list if unavailable
+</ResponseField>
+
+## Additional Metadata Methods
+
+### getHost()
+
+```java
+public String getHost() throws ParsingException
+```
+
+Returns the host domain (for federated services like PeerTube).
+
+<ResponseField name="return" type="String">
+  Host domain, or empty string for centralized services
+</ResponseField>
+
+### getPrivacy()
+
+```java
+public Privacy getPrivacy() throws ParsingException
+```
+
+Returns the privacy setting of the stream.
+
+<ResponseField name="return" type="Privacy">
+  Privacy enum: PUBLIC, UNLISTED, PRIVATE, INTERNAL, or OTHER
+</ResponseField>
+
+### getCategory()
+
+```java
+public String getCategory() throws ParsingException
+```
+
+Returns the content category.
+
+<ResponseField name="return" type="String">
+  Category name, or empty string if unavailable
+</ResponseField>
+
+### getLicence()
+
+```java
+public String getLicence() throws ParsingException
+```
+
+Returns the content license.
+
+<ResponseField name="return" type="String">
+  License name, or empty string if unavailable
+</ResponseField>
+
+### getLanguageInfo()
+
+```java
+public Locale getLanguageInfo() throws ParsingException
+```
+
+Returns the content language.
+
+<ResponseField name="return" type="Locale">
+  Language locale, or null if unavailable
+</ResponseField>
+
+### getTags()
+
+```java
+public List<String> getTags() throws ParsingException
+```
+
+Returns content tags.
+
+<ResponseField name="return" type="List<String>">
+  List of tag strings, or empty list if unavailable
+</ResponseField>
+
+### getSupportInfo()
+
+```java
+public String getSupportInfo() throws ParsingException
+```
+
+Returns creator support/donation information.
+
+<ResponseField name="return" type="String">
+  Support information, or empty string if unavailable
+</ResponseField>
+
+### getMetaInfo()
+
+```java
+public List<MetaInfo> getMetaInfo() throws ParsingException
+```
+
+Returns additional meta information boxes (like COVID-19 warnings, broadcaster info).
+
+<ResponseField name="return" type="List<MetaInfo>">
+  List of meta info objects, or empty list if unavailable
+</ResponseField>
+
+### getContentAvailability()
+
+```java
+public ContentAvailability getContentAvailability() throws ParsingException
+```
+
+Returns the availability status of the content.
+
+<ResponseField name="return" type="ContentAvailability">
+  Content availability enum value
+</ResponseField>
+
+### getErrorMessage()
+
+```java
+public String getErrorMessage()
+```
+
+Returns any error message found on the page.
+
+<ResponseField name="return" type="String">
+  Error message, or null if no error detected
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## Privacy Enum
+
+The `Privacy` enum defines stream privacy levels:
+
+- `PUBLIC` - Publicly accessible
+- `UNLISTED` - Accessible via direct link only
+- `PRIVATE` - Only accessible to owner
+- `INTERNAL` - Internal/organization only
+- `OTHER` - Other privacy setting
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+StreamExtractor extractor = service.getStreamExtractor("https://youtube.com/watch?v=dQw4w9WgXcQ");
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Get stream information
+String title = extractor.getName();
+long views = extractor.getViewCount();
+List<VideoStream> videos = extractor.getVideoStreams();
+List<AudioStream> audio = extractor.getAudioStreams();
+
+// Get uploader info
+String uploaderName = extractor.getUploaderName();
+boolean verified = extractor.isUploaderVerified();
+```

@@ -1,0 +1,134 @@
+---
+title: SoundCloud Service
+description: Audio streaming support for SoundCloud in NewPipe Extractor
+---
+
+SoundCloud is an audio-focused streaming platform supported by NewPipe Extractor, providing access to music tracks, podcasts, and user-generated audio content.
+
+## Media Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Audio Streams" icon="music">
+    Access audio streams in various qualities
+  </Card>
+  <Card title="Comments" icon="comments">
+    Read comment threads and discussions
+  </Card>
+  <Card title="No Video" icon="video-slash">
+    SoundCloud is audio-only; video streams are not supported
+  </Card>
+  <Card title="No Live Streams" icon="tower-broadcast">
+    Live streaming is not available
+  </Card>
+</CardGroup>
+
+## Supported Features
+
+### Content Types
+
+- **Tracks**: Individual audio tracks with full metadata
+- **Albums and EPs**: Collections of tracks
+- **Podcasts**: Episodic audio content
+- **Remixes and DJ Sets**: User-uploaded mixes
+
+### Users and Channels
+
+- User/artist profiles and information
+- Channel tabs for organizing content
+- Upload history and track lists
+- Follower and following counts
+
+### Playlists
+
+- User-created playlists
+- Album playlists
+- Playlist metadata and descriptions
+- Track ordering and durations
+
+### Search
+
+- Full-text search across tracks, users, and playlists
+- Search suggestions and autocomplete
+- Content type filtering (tracks, users, playlists)
+
+### Kiosks (Charts)
+
+SoundCloud provides trending content through its charts system:
+
+- **New & Hot**: Trending and newly released tracks (default kiosk)
+
+<Info>
+The "New & Hot" kiosk showcases trending music and is set as the default discovery endpoint.
+</Info>
+
+## Country Support
+
+SoundCloud charts are available for specific countries:
+
+- **AU**: Australia
+- **CA**: Canada
+- **DE**: Germany
+- **FR**: France
+- **GB**: United Kingdom
+- **IE**: Ireland
+- **NL**: Netherlands
+- **NZ**: New Zealand
+- **US**: United States
+
+<Note>
+Chart content varies by country, reflecting regional music trends and preferences.
+</Note>
+
+## Special Features
+
+### Comments System
+
+SoundCloud's unique timed comment system is supported:
+
+- Comments can be linked to specific timestamps in tracks
+- Read comment threads and user discussions
+- View comment counts and engagement metrics
+
+### Track Information
+
+- Waveform data visualization
+- Play counts and likes
+- Track descriptions and tags
+- Related tracks and recommendations
+
+### Subscription Support
+
+The service includes subscription extraction, allowing users to export and manage their followed artists and channels.
+
+## Technical Details
+
+**Base URL**: `https://soundcloud.com`
+
+**Service ID**: 1
+
+**Link Handler Factories**:
+- Stream: `SoundcloudStreamLinkHandlerFactory`
+- Channel: `SoundcloudChannelLinkHandlerFactory`
+- Playlist: `SoundcloudPlaylistLinkHandlerFactory`
+- Comments: `SoundcloudCommentsLinkHandlerFactory`
+- Charts: `SoundcloudChartsLinkHandlerFactory`
+
+## Limitations
+
+<Note>
+SoundCloud support has some limitations:
+
+- No video content support (audio-only platform)
+- No live streaming capabilities
+- Some tracks may be region-locked or require SoundCloud Go
+- Private tracks and content require authentication
+- Download options depend on track settings
+</Note>
+
+## Use Cases
+
+- Music discovery and streaming
+- Podcast listening
+- DJ mix and remix collections
+- Independent artist content
+- Audio-focused applications

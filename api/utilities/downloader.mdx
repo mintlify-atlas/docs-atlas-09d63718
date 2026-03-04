@@ -1,0 +1,493 @@
+---
+title: Downloader
+description: HTTP downloader interface for fetching resources during extraction
+---
+
+The `Downloader` class is an abstract base class that NewPipe Extractor uses to download resources from streaming services. Implementations must provide the HTTP client logic while the base class provides convenient methods for common request patterns.
+
+## Overview
+
+The Downloader handles all HTTP communication with streaming services, supporting GET, HEAD, and POST requests with automatic localization header management. It works in conjunction with `Request` and `Response` objects to provide a clean API for HTTP operations.
+
+## Abstract Method
+
+### execute
+
+<ParamField path="request" type="Request" required>
+  The request object containing URL, method, headers, and optional data
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The response object containing status code, headers, and body
+</ResponseField>
+
+Executes a request using the specified `Request` object. Implementations must override this method to provide the actual HTTP client logic.
+
+```java
+public abstract Response execute(@Nonnull Request request)
+        throws IOException, ReCaptchaException;
+```
+
+**Throws:**
+- `IOException` - If a network error occurs
+- `ReCaptchaException` - If the service requires CAPTCHA verification
+
+## GET Requests
+
+### get(String url)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the GET request
+</ResponseField>
+
+Performs a GET request using the default preferred localization. Only use this when the resource won't be affected by localization.
+
+```java
+Response response = downloader.get("https://example.com/api/data");
+```
+
+### get(String url, Localization localization)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="localization" type="Localization" required>
+  Source of the Accept-Language header value
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the GET request
+</ResponseField>
+
+Performs a GET request with the specified localization. Sets the `Accept-Language` header automatically.
+
+```java
+Localization locale = new Localization("en", "US");
+Response response = downloader.get(url, locale);
+```
+
+### get(String url, Map headers)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the GET request
+</ResponseField>
+
+Performs a GET request with custom headers using the default localization.
+
+```java
+Map<String, List<String>> headers = new HashMap<>();
+headers.put("User-Agent", Collections.singletonList("CustomAgent/1.0"));
+Response response = downloader.get(url, headers);
+```
+
+### get(String url, Map headers, Localization localization)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ParamField path="localization" type="Localization" required>
+  Source of the Accept-Language header value
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the GET request
+</ResponseField>
+
+Performs a GET request with custom headers and localization. This is the most flexible GET method.
+
+```java
+Map<String, List<String>> headers = new HashMap<>();
+headers.put("Authorization", Collections.singletonList("Bearer token"));
+Localization locale = new Localization("fr", "FR");
+Response response = downloader.get(url, headers, locale);
+```
+
+## HEAD Requests
+
+### head(String url)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the HEAD request
+</ResponseField>
+
+Performs a HEAD request to retrieve headers without downloading the body.
+
+```java
+Response response = downloader.head(url);
+String contentType = response.getHeader("Content-Type");
+```
+
+### head(String url, Map headers)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the HEAD request
+</ResponseField>
+
+Performs a HEAD request with custom headers.
+
+```java
+Map<String, List<String>> headers = new HashMap<>();
+headers.put("Range", Collections.singletonList("bytes=0-1023"));
+Response response = downloader.head(url, headers);
+```
+
+## POST Requests
+
+### post(String url, Map headers, byte[] dataToSend)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ParamField path="dataToSend" type="byte[]">
+  Byte array to send in the request body
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the POST request
+</ResponseField>
+
+Performs a POST request with the default localization.
+
+```java
+byte[] data = "{\"key\":\"value\"}".getBytes(StandardCharsets.UTF_8);
+Response response = downloader.post(url, null, data);
+```
+
+### post(String url, Map headers, byte[] dataToSend, Localization localization)
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ParamField path="dataToSend" type="byte[]">
+  Byte array to send in the request body
+</ParamField>
+
+<ParamField path="localization" type="Localization" required>
+  Source of the Accept-Language header value
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the POST request
+</ResponseField>
+
+Performs a POST request with custom localization and sets the `Accept-Language` header.
+
+### postWithContentType
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ParamField path="dataToSend" type="byte[]">
+  Byte array to send in the request body
+</ParamField>
+
+<ParamField path="contentType" type="String" required>
+  MIME type to set as the Content-Type header value
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the POST request
+</ResponseField>
+
+Convenient method to send a POST request with a specific Content-Type header. Automatically adds the Content-Type to the headers.
+
+```java
+byte[] xmlData = "<root><item>value</item></root>".getBytes();
+Response response = downloader.postWithContentType(
+    url, null, xmlData, "application/xml"
+);
+```
+
+**With localization:**
+```java
+Localization locale = new Localization("de", "DE");
+Response response = downloader.postWithContentType(
+    url, null, data, locale, "application/xml"
+);
+```
+
+### postWithContentTypeJson
+
+<ParamField path="url" type="String" required>
+  The URL pointing to the wanted resource
+</ParamField>
+
+<ParamField path="headers" type="Map<String, List<String>>">
+  Headers to use in the request (overrides defaults)
+</ParamField>
+
+<ParamField path="dataToSend" type="byte[]">
+  Byte array to send in the request body
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  The result of the POST request
+</ResponseField>
+
+Convenient method to send a POST request with `Content-Type: application/json`. This is a specialized version of `postWithContentType`.
+
+```java
+byte[] jsonData = "{\"query\":\"search term\"}".getBytes(StandardCharsets.UTF_8);
+Response response = downloader.postWithContentTypeJson(url, null, jsonData);
+```
+
+**With localization:**
+```java
+Localization locale = new Localization("ja", "JP");
+Response response = downloader.postWithContentTypeJson(
+    url, null, jsonData, locale
+);
+```
+
+## Request Object
+
+The `Request` class encapsulates all request parameters. Use the builder pattern to create requests:
+
+```java
+Request request = Request.newBuilder()
+    .get(url)
+    .localization(new Localization("en", "US"))
+    .setHeader("Custom-Header", "value")
+    .build();
+
+Response response = downloader.execute(request);
+```
+
+### Request Properties
+
+<ResponseField name="httpMethod" type="String">
+  HTTP method (GET, POST, HEAD)
+</ResponseField>
+
+<ResponseField name="url" type="String">
+  Target URL for the request
+</ResponseField>
+
+<ResponseField name="headers" type="Map<String, List<String>>">
+  Request headers (overrides defaults)
+</ResponseField>
+
+<ResponseField name="dataToSend" type="byte[]">
+  Optional data to send in request body
+</ResponseField>
+
+<ResponseField name="localization" type="Localization">
+  Localization for Accept-Language header
+</ResponseField>
+
+### Request Builder Methods
+
+<Expandable title="get(String url)">
+  Sets HTTP method to GET and the target URL
+</Expandable>
+
+<Expandable title="head(String url)">
+  Sets HTTP method to HEAD and the target URL
+</Expandable>
+
+<Expandable title="post(String url, byte[] data)">
+  Sets HTTP method to POST, the target URL, and data to send
+</Expandable>
+
+<Expandable title="headers(Map headers)">
+  Replaces all headers with the provided map
+</Expandable>
+
+<Expandable title="localization(Localization localization)">
+  Sets the localization for the request
+</Expandable>
+
+<Expandable title="setHeader(String name, String value)">
+  Sets a single header value, replacing any existing values
+</Expandable>
+
+<Expandable title="addHeader(String name, String value)">
+  Adds a header value to existing values
+</Expandable>
+
+<Expandable title="automaticLocalizationHeader(boolean enabled)">
+  Controls whether Accept-Language header is automatically added (default: true)
+</Expandable>
+
+## Response Object
+
+The `Response` class contains the results of an HTTP request:
+
+```java
+Response response = downloader.get(url);
+int status = response.responseCode();
+String body = response.responseBody();
+String contentType = response.getHeader("Content-Type");
+```
+
+### Response Properties
+
+<ResponseField name="responseCode" type="int">
+  HTTP status code (e.g., 200, 404, 500)
+</ResponseField>
+
+<ResponseField name="responseMessage" type="String">
+  HTTP status message (e.g., "OK", "Not Found")
+</ResponseField>
+
+<ResponseField name="responseHeaders" type="Map<String, List<String>>">
+  All response headers
+</ResponseField>
+
+<ResponseField name="responseBody" type="String">
+  Response body as a string (empty string if null)
+</ResponseField>
+
+<ResponseField name="latestUrl" type="String">
+  The final URL after any redirects
+</ResponseField>
+
+### Response Methods
+
+<Expandable title="getHeader(String name)">
+  Returns the first value of the specified header (case-insensitive). Useful for headers that typically don't repeat.
+  
+  ```java
+  String contentType = response.getHeader("Content-Type");
+  ```
+</Expandable>
+
+## Example Implementation
+
+```java
+import org.schabi.newpipe.extractor.downloader.Downloader;
+import org.schabi.newpipe.extractor.downloader.Request;
+import org.schabi.newpipe.extractor.downloader.Response;
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+
+import java.io.IOException;
+
+public class CustomDownloader extends Downloader {
+    private final HttpClient client;
+    
+    public CustomDownloader(HttpClient client) {
+        this.client = client;
+    }
+    
+    @Override
+    public Response execute(@Nonnull Request request) 
+            throws IOException, ReCaptchaException {
+        // Build HTTP request from Request object
+        HttpRequest httpRequest = HttpRequest.newBuilder()
+            .uri(URI.create(request.url()))
+            .method(request.httpMethod(), 
+                   request.dataToSend() != null 
+                       ? BodyPublishers.ofByteArray(request.dataToSend())
+                       : BodyPublishers.noBody())
+            .build();
+            
+        // Add headers
+        request.headers().forEach((name, values) -> {
+            values.forEach(value -> 
+                httpRequest.headers().add(name, value));
+        });
+        
+        // Execute request
+        HttpResponse<String> httpResponse = 
+            client.send(httpRequest, BodyHandlers.ofString());
+            
+        // Check for CAPTCHA
+        if (httpResponse.statusCode() == 429) {
+            throw new ReCaptchaException("CAPTCHA required", 
+                                        request.url());
+        }
+        
+        // Build Response object
+        return new Response(
+            httpResponse.statusCode(),
+            httpResponse.headers().firstValue(":status")
+                .orElse("Unknown"),
+            httpResponse.headers().map(),
+            httpResponse.body(),
+            httpResponse.uri().toString()
+        );
+    }
+}
+```
+
+## Usage in Extractors
+
+```java
+// In a service extractor
+public class YouTubeExtractor {
+    private final Downloader downloader;
+    
+    public String fetchChannelData(String channelId) 
+            throws IOException, ExtractionException {
+        String url = "https://youtube.com/channel/" + channelId;
+        
+        // Simple GET request
+        Response response = downloader.get(url);
+        
+        // With localization
+        Localization locale = new Localization("en", "US");
+        response = downloader.get(url, locale);
+        
+        // POST with JSON
+        String jsonBody = buildApiRequest(channelId);
+        byte[] data = jsonBody.getBytes(StandardCharsets.UTF_8);
+        response = downloader.postWithContentTypeJson(
+            "https://youtube.com/youtubei/v1/browse",
+            null,
+            data
+        );
+        
+        return response.responseBody();
+    }
+}
+```
+
+## Related Classes
+
+- [Localization](/api/utilities/localization) - For setting language and country preferences
+- [Exceptions](/api/utilities/exceptions) - Error handling including ReCaptchaException

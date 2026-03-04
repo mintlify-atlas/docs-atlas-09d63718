@@ -1,0 +1,366 @@
+---
+title: 'Extracting Stream Data'
+description: 'Learn how to extract video and audio stream information from services like YouTube'
+---
+
+## Overview
+
+The `StreamExtractor` and `StreamInfo` classes are the core components for extracting detailed information about videos, audio streams, and live streams from supported services.
+
+## Basic Usage
+
+<Steps>
+  <Step title="Initialize NewPipe">
+    Before extracting any data, you must initialize NewPipe with a downloader implementation:
+
+    ```java
+    import org.schabi.newpipe.extractor.NewPipe;
+    import org.schabi.newpipe.extractor.localization.Localization;
+
+    // Initialize with your downloader
+    NewPipe.init(yourDownloaderInstance);
+    
+    // Optional: Set localization
+    NewPipe.setupLocalization(Localization.fromLocale(Locale.US));
+    ```
+  </Step>
+
+  <Step title="Extract Stream Info">
+    Use `StreamInfo.getInfo()` to extract all available information from a stream URL:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.StreamInfo;
+    
+    try {
+        String url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+        StreamInfo info = StreamInfo.getInfo(url);
+        
+        // Access basic information
+        System.out.println("Title: " + info.getName());
+        System.out.println("Uploader: " + info.getUploaderName());
+        System.out.println("Duration: " + info.getDuration());
+        System.out.println("View Count: " + info.getViewCount());
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Access Stream URLs">
+    Retrieve actual playable stream URLs:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.*;
+    
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+    // Get audio streams
+    List<AudioStream> audioStreams = info.getAudioStreams();
+    for (AudioStream stream : audioStreams) {
+        System.out.println("Audio: " + stream.getFormat() + 
+                         " - " + stream.getAverageBitrate() + " kbps");
+        System.out.println("URL: " + stream.getContent());
+    }
+    
+    // Get video streams (with audio)
+    List<VideoStream> videoStreams = info.getVideoStreams();
+    for (VideoStream stream : videoStreams) {
+        System.out.println("Video: " + stream.getResolution() + 
+                         " - " + stream.getFormat());
+        System.out.println("URL: " + stream.getContent());
+    }
+    
+    // Get video-only streams (no audio, for DASH)
+    List<VideoStream> videoOnlyStreams = info.getVideoOnlyStreams();
+    for (VideoStream stream : videoOnlyStreams) {
+        System.out.println("Video Only: " + stream.getResolution());
+    }
+    ```
+  </Step>
+</Steps>
+
+## Advanced Features
+
+### Stream Metadata
+
+Access comprehensive metadata about the stream:
+
+<CodeGroup>
+```java Uploader Information
+StreamInfo info = StreamInfo.getInfo(url);
+
+// Uploader details
+String uploaderName = info.getUploaderName();
+String uploaderUrl = info.getUploaderUrl();
+boolean verified = info.isUploaderVerified();
+long subscriberCount = info.getUploaderSubscriberCount();
+
+// Get uploader avatars (multiple resolutions)
+List<Image> avatars = info.getUploaderAvatars();
+for (Image avatar : avatars) {
+    System.out.println("Avatar: " + avatar.getUrl() + 
+                     " (" + avatar.getHeight() + "x" + 
+                     avatar.getWidth() + ")");
+}
+```
+
+```java Upload Date & Stats
+StreamInfo info = StreamInfo.getInfo(url);
+
+// Date information
+DateWrapper uploadDate = info.getUploadDate();
+String textualDate = info.getTextualUploadDate();
+
+// Engagement metrics
+long viewCount = info.getViewCount();
+long likeCount = info.getLikeCount();
+long dislikeCount = info.getDislikeCount(); // -1 if unavailable
+
+// Content details
+int ageLimit = info.getAgeLimit(); // 0 if no age restriction
+long duration = info.getDuration(); // in seconds
+```
+
+```java Description & Tags
+StreamInfo info = StreamInfo.getInfo(url);
+
+// Get description
+Description description = info.getDescription();
+String plainText = description.getContent();
+
+// Get tags
+List<String> tags = info.getTags();
+
+// Additional metadata
+String category = info.getCategory();
+String licence = info.getLicence();
+Locale language = info.getLanguageInfo();
+```
+</CodeGroup>
+
+### Stream Types
+
+Handle different types of streams:
+
+```java
+StreamInfo info = StreamInfo.getInfo(url);
+StreamType type = info.getStreamType();
+
+switch (type) {
+    case VIDEO_STREAM:
+        System.out.println("Regular video stream");
+        break;
+    case AUDIO_STREAM:
+        System.out.println("Audio-only stream (e.g., SoundCloud)");
+        break;
+    case LIVE_STREAM:
+        System.out.println("Live stream");
+        // Note: duration will be 0 for live streams
+        break;
+    case AUDIO_LIVE_STREAM:
+        System.out.println("Audio-only live stream");
+        break;
+    case POST_LIVE_STREAM:
+        System.out.println("Recorded live stream");
+        break;
+    case NONE:
+        System.out.println("Unknown stream type");
+        break;
+}
+```
+
+### Subtitles
+
+Extract available subtitle tracks:
+
+```java
+import org.schabi.newpipe.extractor.stream.SubtitlesStream;
+import org.schabi.newpipe.extractor.MediaFormat;
+
+StreamInfo info = StreamInfo.getInfo(url);
+
+// Get all available subtitles
+List<SubtitlesStream> subtitles = info.getSubtitles();
+for (SubtitlesStream subtitle : subtitles) {
+    System.out.println("Language: " + subtitle.getLanguageTag());
+    System.out.println("Format: " + subtitle.getFormat());
+    System.out.println("URL: " + subtitle.getContent());
+    System.out.println("Auto-generated: " + subtitle.isAutoGenerated());
+}
+```
+
+### Related Streams
+
+Get suggested or related content:
+
+```java
+StreamInfo info = StreamInfo.getInfo(url);
+
+List<InfoItem> relatedItems = info.getRelatedItems();
+for (InfoItem item : relatedItems) {
+    if (item instanceof StreamInfoItem) {
+        StreamInfoItem relatedStream = (StreamInfoItem) item;
+        System.out.println("Related: " + relatedStream.getName());
+        System.out.println("Uploader: " + relatedStream.getUploaderName());
+        System.out.println("URL: " + relatedStream.getUrl());
+    }
+}
+```
+
+### Segments & Chapters
+
+Extract timeline segments (chapters):
+
+```java
+import org.schabi.newpipe.extractor.stream.StreamSegment;
+
+StreamInfo info = StreamInfo.getInfo(url);
+
+List<StreamSegment> segments = info.getStreamSegments();
+for (StreamSegment segment : segments) {
+    System.out.println("Chapter: " + segment.getTitle());
+    System.out.println("Start: " + segment.getStartTimeSeconds() + "s");
+    System.out.println("Preview URL: " + segment.getPreviewUrl());
+}
+```
+
+### DASH & HLS Manifests
+
+For adaptive streaming:
+
+```java
+StreamInfo info = StreamInfo.getInfo(url);
+
+// DASH manifest URL (for adaptive video/audio)
+String dashUrl = info.getDashMpdUrl();
+if (!dashUrl.isEmpty()) {
+    System.out.println("DASH MPD: " + dashUrl);
+}
+
+// HLS manifest URL
+String hlsUrl = info.getHlsUrl();
+if (!hlsUrl.isEmpty()) {
+    System.out.println("HLS M3U8: " + hlsUrl);
+}
+```
+
+## Working with Services
+
+Extract from specific services:
+
+```java
+import org.schabi.newpipe.extractor.StreamingService;
+
+// Get service by name
+StreamingService youtube = NewPipe.getService("YouTube");
+StreamInfo info = StreamInfo.getInfo(youtube, videoUrl);
+
+// Or get service by ID
+StreamingService service = NewPipe.getService(0); // YouTube = 0
+StreamInfo info2 = StreamInfo.getInfo(service, videoUrl);
+
+// Get all available services
+List<StreamingService> services = NewPipe.getServices();
+for (StreamingService s : services) {
+    System.out.println(s.getServiceInfo().getName());
+}
+```
+
+## Error Handling
+
+<Warning>
+  Always handle exceptions when extracting stream data. Network issues, unavailable content, and parsing errors can occur.
+</Warning>
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+    // Check for extraction errors
+    List<Throwable> errors = info.getErrors();
+    if (!errors.isEmpty()) {
+        System.out.println("Extraction completed with errors:");
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getMessage());
+        }
+    }
+    
+} catch (ContentNotAvailableException e) {
+    System.err.println("Content not available: " + e.getMessage());
+} catch (GeographicRestrictionException e) {
+    System.err.println("Content blocked in your region");
+} catch (AgeRestrictedContentException e) {
+    System.err.println("Age-restricted content");
+} catch (ExtractionException e) {
+    System.err.println("Extraction error: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+<Tip>
+  The `StreamInfo` class gracefully handles partial extraction failures. Check the `getErrors()` list to see which fields failed to extract while still accessing successfully extracted data.
+</Tip>
+
+## Best Practices
+
+1. **Check stream availability** - Verify `getContentAvailability()` before processing
+2. **Handle missing data** - Many fields return `-1` or empty collections when unavailable
+3. **Cache results** - Avoid repeated extractions for the same URL
+4. **Respect rate limits** - Implement delays between requests to avoid being blocked
+5. **Use appropriate streams** - Choose video-only + audio for better quality/format control
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.stream.*;
+
+public class StreamExtractorExample {
+    public static void main(String[] args) {
+        // Initialize
+        NewPipe.init(yourDownloader);
+        
+        try {
+            String url = "https://www.youtube.com/watch?v=VIDEO_ID";
+            StreamInfo info = StreamInfo.getInfo(url);
+            
+            // Print basic info
+            System.out.println("=== Stream Information ===");
+            System.out.println("Title: " + info.getName());
+            System.out.println("Uploader: " + info.getUploaderName());
+            System.out.println("Duration: " + info.getDuration() + " seconds");
+            System.out.println("Views: " + info.getViewCount());
+            System.out.println("Type: " + info.getStreamType());
+            
+            // Get best audio stream
+            List<AudioStream> audioStreams = info.getAudioStreams();
+            if (!audioStreams.isEmpty()) {
+                AudioStream bestAudio = audioStreams.get(0);
+                System.out.println("\nBest Audio: " + bestAudio.getFormat());
+                System.out.println("Bitrate: " + bestAudio.getAverageBitrate());
+            }
+            
+            // Get best video stream
+            List<VideoStream> videoStreams = info.getVideoStreams();
+            if (!videoStreams.isEmpty()) {
+                VideoStream bestVideo = videoStreams.get(0);
+                System.out.println("\nBest Video: " + bestVideo.getResolution());
+                System.out.println("Format: " + bestVideo.getFormat());
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Next Steps
+
+- Learn about [extracting channel data](/guides/extracting-channels)
+- Explore [search functionality](/guides/search)
+- Understand [error handling patterns](/guides/error-handling)

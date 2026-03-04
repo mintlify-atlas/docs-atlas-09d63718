@@ -1,0 +1,136 @@
+---
+title: YouTube Service
+description: Comprehensive YouTube support in NewPipe Extractor
+---
+
+YouTube is the most feature-complete service supported by NewPipe Extractor, offering full access to videos, audio streams, live content, and user interactions.
+
+## Media Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Audio Streams" icon="music">
+    Extract audio-only streams in various qualities and formats
+  </Card>
+  <Card title="Video Streams" icon="video">
+    Access video streams with different resolutions and codecs
+  </Card>
+  <Card title="Live Streams" icon="tower-broadcast">
+    Support for live broadcasts and premieres
+  </Card>
+  <Card title="Comments" icon="comments">
+    Read and extract comment threads
+  </Card>
+</CardGroup>
+
+## Supported Features
+
+### Content Types
+
+- **Videos**: Regular uploaded videos with full metadata
+- **Live Streams**: Real-time broadcasts and running live content
+- **Premieres**: Scheduled video releases
+- **YouTube Music**: Dedicated music search and content
+- **Mix Playlists**: Auto-generated mixes and radio playlists
+
+### Channels
+
+- Channel information and metadata
+- Channel tabs (Videos, Shorts, Live, Playlists, etc.)
+- Channel feeds and subscriptions
+- Upload dates and video counts
+
+### Playlists
+
+- User-created playlists
+- Auto-generated mixes
+- Playlist continuation (pagination)
+
+### Search
+
+- General YouTube search
+- YouTube Music search (with `music_` content filter)
+- Search suggestions and autocomplete
+- Content type filtering
+
+### Kiosks (Trending)
+
+YouTube provides several kiosk endpoints for discovering content:
+
+- **Live**: Currently running live streams (default kiosk)
+- **Trending Podcasts**: Trending podcast episodes
+- **Trending Gaming**: Popular gaming videos
+- **Trending Movies & Shows**: Movie and TV show trailers
+- **Trending Music**: Popular music content
+- **Trending** (deprecated): General trending content (removed from YouTube interface as of July 2025)
+
+<Note>
+The default kiosk is set to "Live" which shows currently running live streams.
+</Note>
+
+## Localization Support
+
+### Languages
+
+YouTube supports extensive localization with multiple language options. The extractor currently provides full support for English (GB) localization.
+
+### Content Countries
+
+YouTube content can be filtered by country, supporting over 150 countries including:
+
+- Americas: US, CA, MX, BR, AR, CL, CO
+- Europe: GB, DE, FR, ES, IT, NL, PL, RU
+- Asia-Pacific: JP, KR, IN, AU, CN, HK, TW
+- Middle East & Africa: SA, AE, IL, ZA, EG
+
+And many more regions worldwide.
+
+## Special Features
+
+### YouTube Music Integration
+
+The service includes dedicated YouTube Music search capabilities:
+
+```java
+// Search with music_ content filter uses YoutubeMusicSearchExtractor
+SearchQueryHandler handler = service.getSearchQHFactory()
+    .fromQuery("artist name", List.of("music_songs"), "");
+```
+
+### Mix Playlists
+
+YouTube's auto-generated mix playlists are detected and handled specially:
+
+- Radio mixes based on songs
+- Artist mixes
+- Genre-based mixes
+
+### Subscription Import
+
+The service supports importing YouTube subscriptions, allowing users to migrate their channel subscriptions.
+
+## Technical Details
+
+**Base URL**: `https://youtube.com`
+
+**Service ID**: 0
+
+**Link Handler Factories**:
+- Stream: `YoutubeStreamLinkHandlerFactory`
+- Channel: `YoutubeChannelLinkHandlerFactory`
+- Playlist: `YoutubePlaylistLinkHandlerFactory`
+- Comments: `YoutubeCommentsLinkHandlerFactory`
+
+<Info>
+YouTube is the primary service for NewPipe Extractor with the most comprehensive feature set and regular updates.
+</Info>
+
+## Limitations
+
+<Note>
+While YouTube support is extensive, some limitations exist:
+
+- Age-restricted content may require special handling
+- Some features depend on YouTube's public API availability
+- Rate limiting may apply to excessive requests
+- Certain premium features are not accessible
+</Note>

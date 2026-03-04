@@ -1,0 +1,435 @@
+---
+title: ListLinkHandlerFactory
+description: Factory for creating ListLinkHandler instances with content and sort filters
+---
+
+The `ListLinkHandlerFactory` extends `LinkHandlerFactory` to support content filtering and sorting for list-based resources like channel tabs, kiosks, or categorized content pages.
+
+## Class Overview
+
+```java
+public abstract class ListLinkHandlerFactory extends LinkHandlerFactory
+```
+
+This factory creates `ListLinkHandler` instances that include:
+- All base LinkHandler properties (URL, ID)
+- Content filters (e.g., "videos", "playlists", "shorts")
+- Sort filters (e.g., "recent", "popular", "oldest")
+
+## Abstract Methods (Must Override)
+
+<ParamField path="getUrl" type="String getUrl(String id, List<String> contentFilter, String sortFilter)">
+  Construct a URL from an ID with content and sort filters applied.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `contentFilter` (List&lt;String&gt;) - List of content type filters to apply
+  - `sortFilter` (String) - Sort order to apply
+
+  **Returns:** String - The constructed URL with filters
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be constructed
+  - `UnsupportedOperationException` - If URL construction is not supported
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String getUrl(String id, List<String> contentFilter, String sortFilter) 
+          throws ParsingException {
+      StringBuilder url = new StringBuilder("https://example.com/channel/");
+      url.append(id);
+      
+      if (!contentFilter.isEmpty()) {
+          url.append("/").append(contentFilter.get(0));
+      }
+      
+      if (!sortFilter.isEmpty()) {
+          url.append("?sort=").append(sortFilter);
+      }
+      
+      return url.toString();
+  }
+  ```
+</ParamField>
+
+## Optional Methods
+
+<ParamField path="getUrl" type="String getUrl(String id, List<String> contentFilter, String sortFilter, String baseUrl)">
+  Construct a URL with filters and a base URL. Override if your service requires base URL context.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `contentFilter` (List&lt;String&gt;) - Content type filters
+  - `sortFilter` (String) - Sort order
+  - `baseUrl` (String) - The base URL for the service
+
+  **Returns:** String - The constructed URL
+
+  **Throws:**
+  - `ParsingException` - If the URL cannot be constructed
+  - `UnsupportedOperationException` - If URL construction is not supported
+
+  **Default behavior:** Calls `getUrl(id, contentFilter, sortFilter)` and ignores baseUrl
+</ParamField>
+
+<ParamField path="getAvailableContentFilter" type="String[] getAvailableContentFilter()">
+  Return the content filters that this extractor can handle.
+
+  **Returns:** String[] - Array of available content filter names
+
+  **Default:** Returns empty array
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String[] getAvailableContentFilter() {
+      return new String[]{"videos", "playlists", "shorts", "live"};
+  }
+  ```
+
+  These filters represent different types of content that can be displayed, such as:
+  - "videos" - Regular video content
+  - "playlists" - Playlist collections
+  - "channels" - Channel listings
+  - "music" - Music-specific content
+</ParamField>
+
+<ParamField path="getAvailableSortFilter" type="String[] getAvailableSortFilter()">
+  Return the sort filters that this extractor can handle.
+
+  **Returns:** String[] - Array of available sort filter names
+
+  **Default:** Returns empty array
+
+  **Example implementation:**
+  ```java
+  @Override
+  public String[] getAvailableSortFilter() {
+      return new String[]{"recent", "popular", "oldest"};
+  }
+  ```
+
+  These filters represent different sorting options, such as:
+  - "recent" / "newest" - Most recent content first
+  - "popular" - Most popular/viewed content
+  - "oldest" - Oldest content first
+  - "A-Z" - Alphabetical sorting
+</ParamField>
+
+## Public Methods
+
+<ResponseField name="fromUrl" type="ListLinkHandler fromUrl(String url)">
+  Build a ListLinkHandler from a URL.
+
+  **Parameters:**
+  - `url` (String) - The URL to parse. Must not be null or empty.
+
+  **Returns:** ListLinkHandler - Complete handler with URL, ID, and empty filters
+
+  **Throws:**
+  - `IllegalArgumentException` - If URL is null or empty
+  - `ParsingException` - If URL cannot be parsed or is not accepted
+
+  **Behavior:**
+  1. Follows Google redirects automatically
+  2. Extracts base URL
+  3. Delegates to `fromUrl(url, baseUrl)`
+  4. Wraps result in ListLinkHandler with empty filters
+
+  **Usage:**
+  ```java
+  ListLinkHandler handler = factory.fromUrl("https://youtube.com/c/channel123");
+  String id = handler.getId();
+  List<String> filters = handler.getContentFilters(); // Empty list
+  ```
+</ResponseField>
+
+<ResponseField name="fromUrl" type="ListLinkHandler fromUrl(String url, String baseUrl)">
+  Build a ListLinkHandler from a URL and base URL.
+
+  **Parameters:**
+  - `url` (String) - The URL without Google redirects. Must not be null.
+  - `baseUrl` (String) - The base URL
+
+  **Returns:** ListLinkHandler - Complete handler instance
+
+  **Throws:**
+  - `NullPointerException` - If URL is null
+  - `ParsingException` - If URL is not accepted or cannot be parsed
+
+  **Behavior:**
+  - Calls parent `LinkHandlerFactory.fromUrl(url, baseUrl)`
+  - Wraps the LinkHandler in a new ListLinkHandler with empty filters
+</ResponseField>
+
+<ResponseField name="fromId" type="ListLinkHandler fromId(String id)">
+  Build a ListLinkHandler from a resource ID.
+
+  **Parameters:**
+  - `id` (String) - The resource ID. Must not be null.
+
+  **Returns:** ListLinkHandler - Complete handler with empty filters
+
+  **Throws:**
+  - `NullPointerException` - If ID is null
+  - `ParsingException` - If URL cannot be constructed from ID
+
+  **Behavior:**
+  - Calls parent `LinkHandlerFactory.fromId(id)`
+  - Wraps result in ListLinkHandler with empty filters
+</ResponseField>
+
+<ResponseField name="fromId" type="ListLinkHandler fromId(String id, String baseUrl)">
+  Build a ListLinkHandler from a resource ID and base URL.
+
+  **Parameters:**
+  - `id` (String) - The resource ID. Must not be null.
+  - `baseUrl` (String) - The base URL
+
+  **Returns:** ListLinkHandler - Complete handler instance
+
+  **Throws:**
+  - `NullPointerException` - If ID is null
+  - `ParsingException` - If URL cannot be constructed
+
+  **Behavior:**
+  - Calls parent `LinkHandlerFactory.fromId(id, baseUrl)`
+  - Wraps result in ListLinkHandler with empty filters
+</ResponseField>
+
+<ResponseField name="fromQuery" type="ListLinkHandler fromQuery(String id, List<String> contentFilters, String sortFilter)">
+  Build a ListLinkHandler from an ID with specific content and sort filters. This is the primary method for creating filtered list handlers.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `contentFilters` (List&lt;String&gt;) - Content type filters to apply
+  - `sortFilter` (String) - Sort order to apply
+
+  **Returns:** ListLinkHandler - Complete handler with all filters applied
+
+  **Throws:**
+  - `ParsingException` - If URL cannot be constructed with filters
+
+  **Behavior:**
+  1. Constructs URL using `getUrl(id, contentFilters, sortFilter)`
+  2. Creates ListLinkHandler with URL, ID, and filters
+  3. Both originalUrl and url are set to the same constructed URL
+
+  **Usage:**
+  ```java
+  List<String> filters = Arrays.asList("videos");
+  ListLinkHandler handler = factory.fromQuery(
+      "channel123", 
+      filters, 
+      "recent"
+  );
+  String url = handler.getUrl(); // URL with filters applied
+  ```
+</ResponseField>
+
+<ResponseField name="fromQuery" type="ListLinkHandler fromQuery(String id, List<String> contentFilters, String sortFilter, String baseUrl)">
+  Build a ListLinkHandler from an ID with filters and base URL.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `contentFilters` (List&lt;String&gt;) - Content type filters
+  - `sortFilter` (String) - Sort order
+  - `baseUrl` (String) - The base URL
+
+  **Returns:** ListLinkHandler - Complete handler with all filters applied
+
+  **Throws:**
+  - `ParsingException` - If URL cannot be constructed
+
+  **Behavior:**
+  - Constructs URL using `getUrl(id, contentFilters, sortFilter, baseUrl)`
+  - Creates ListLinkHandler with URL, ID, and filters
+</ResponseField>
+
+<ResponseField name="getUrl" type="String getUrl(String id)">
+  Construct a URL from an ID without any filters. Inherited from LinkHandlerFactory.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+
+  **Returns:** String - The constructed URL without filters
+
+  **Throws:**
+  - `ParsingException` - If URL cannot be constructed
+  - `UnsupportedOperationException` - If not supported
+
+  **Implementation:**
+  - Calls `getUrl(id, new ArrayList<>(0), "")` with empty filters
+  - This maintains compatibility with the base LinkHandlerFactory
+
+  **Note:** Do NOT override this method in your implementation. Override the three-parameter version instead.
+</ResponseField>
+
+<ResponseField name="getUrl" type="String getUrl(String id, String baseUrl)">
+  Construct a URL from an ID and base URL without filters. Inherited from LinkHandlerFactory.
+
+  **Parameters:**
+  - `id` (String) - The resource ID
+  - `baseUrl` (String) - The base URL
+
+  **Returns:** String - The constructed URL
+
+  **Throws:**
+  - `ParsingException` - If URL cannot be constructed
+
+  **Implementation:**
+  - Calls `getUrl(id, new ArrayList<>(0), "", baseUrl)` with empty filters
+  - Maintains compatibility with base class
+</ResponseField>
+
+## ListLinkHandler Class
+
+The `ListLinkHandler` class extends `LinkHandler` with filter support:
+
+<ResponseField name="ListLinkHandler" type="class">
+  Immutable data class that holds URL, ID, and filter information.
+
+  **Constructors:**
+  ```java
+  public ListLinkHandler(String originalUrl, String url, String id, 
+                         List<String> contentFilters, String sortFilter)
+  public ListLinkHandler(ListLinkHandler handler) // Copy constructor
+  public ListLinkHandler(LinkHandler handler) // Convert from LinkHandler
+  ```
+
+  **Inherited Fields:**
+  - `originalUrl` (String) - The URL as originally provided
+  - `url` (String) - The cleaned/normalized URL
+  - `id` (String) - The extracted resource ID
+
+  **Additional Fields:**
+  - `contentFilters` (List&lt;String&gt;) - Immutable list of content type filters
+  - `sortFilter` (String) - The sort filter
+
+  **Methods:**
+  - All methods from LinkHandler: `getOriginalUrl()`, `getUrl()`, `getId()`, `getBaseUrl()`
+  - `List<String> getContentFilters()` - Returns unmodifiable list of content filters
+  - `String getSortFilter()` - Returns the sort filter
+
+  **Immutability:** The `contentFilters` list is wrapped with `Collections.unmodifiableList()` to ensure it cannot be modified after creation.
+</ResponseField>
+
+## Implementation Example
+
+```java
+public class YoutubeChannelLinkHandlerFactory extends ListLinkHandlerFactory {
+    
+    @Override
+    public String getId(String url) throws ParsingException {
+        // Extract channel ID from URL
+        if (url.contains("/c/")) {
+            return url.substring(url.indexOf("/c/") + 3);
+        }
+        throw new ParsingException("Could not extract channel ID");
+    }
+    
+    @Override
+    public String getUrl(String id, List<String> contentFilter, String sortFilter) 
+            throws ParsingException {
+        StringBuilder url = new StringBuilder("https://www.youtube.com/c/");
+        url.append(id);
+        
+        // Add content filter as path segment
+        if (!contentFilter.isEmpty()) {
+            String filter = contentFilter.get(0);
+            if (filter.equals("videos")) {
+                url.append("/videos");
+            } else if (filter.equals("playlists")) {
+                url.append("/playlists");
+            } else if (filter.equals("shorts")) {
+                url.append("/shorts");
+            }
+        }
+        
+        // Add sort filter as query parameter
+        if (!sortFilter.isEmpty()) {
+            url.append("?sort=").append(sortFilter);
+        }
+        
+        return url.toString();
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        return url.contains("youtube.com/c/") || 
+               url.contains("youtube.com/channel/");
+    }
+    
+    @Override
+    public String[] getAvailableContentFilter() {
+        return new String[]{"videos", "playlists", "shorts", "live"};
+    }
+    
+    @Override
+    public String[] getAvailableSortFilter() {
+        return new String[]{"recent", "popular", "oldest"};
+    }
+}
+```
+
+## Usage Example
+
+```java
+YoutubeChannelLinkHandlerFactory factory = new YoutubeChannelLinkHandlerFactory();
+
+// Create handler from URL
+ListLinkHandler handler1 = factory.fromUrl("https://youtube.com/c/example");
+
+// Create handler with filters
+List<String> contentFilters = Arrays.asList("videos");
+ListLinkHandler handler2 = factory.fromQuery(
+    "example", 
+    contentFilters, 
+    "recent"
+);
+
+// Access filter information
+List<String> filters = handler2.getContentFilters(); // ["videos"]
+String sort = handler2.getSortFilter(); // "recent"
+String url = handler2.getUrl(); // https://youtube.com/c/example/videos?sort=recent
+
+// Check available filters
+String[] availableContent = factory.getAvailableContentFilter();
+String[] availableSort = factory.getAvailableSortFilter();
+```
+
+## Filter Design Guidelines
+
+1. **Content Filters**: Should represent different types or categories of content
+   - Keep names lowercase and consistent
+   - Use plural forms ("videos", "playlists")
+   - Match the service's terminology
+
+2. **Sort Filters**: Should represent ordering mechanisms
+   - Use descriptive names ("recent", "popular", not "r", "p")
+   - Be consistent across your service implementations
+   - Document expected behavior
+
+3. **Multiple Filters**: If supporting multiple content filters simultaneously
+   - Document the order of precedence
+   - Consider how filters interact
+   - Handle conflicts gracefully
+
+4. **Empty Filters**: Always handle empty filter lists and strings
+   - Empty list means "no filter" or "default view"
+   - Empty string for sort means "default sort order"
+
+## Best Practices
+
+1. **Filter Validation**: Validate filters in `getUrl()` before building the URL
+2. **Default Behavior**: Define clear default behavior when no filters are provided
+3. **Document Filters**: Clearly document what each filter does in your implementation
+4. **Compatibility**: Ensure `fromUrl()` works with URLs that have filters embedded
+5. **Immutability**: Never modify the contentFilters list parameter
+
+## See Also
+
+- [Link Handler System Overview](/api/link-handlers/overview)
+- [LinkHandlerFactory](/api/link-handlers/link-handler-factory) - Base factory class
+- [SearchQueryHandlerFactory](/api/link-handlers/search-query-handler-factory) - For search queries

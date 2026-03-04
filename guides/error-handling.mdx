@@ -1,0 +1,482 @@
+---
+title: 'Error Handling'
+description: 'Best practices for handling errors and exceptions in NewPipe Extractor'
+---
+
+## Overview
+
+NewPipe Extractor provides a comprehensive exception hierarchy to help you handle various failure scenarios. Understanding these exceptions is crucial for building robust applications.
+
+## Exception Hierarchy
+
+All extractor exceptions inherit from `ExtractionException`:
+
+```java
+ExtractionException
+├── ParsingException
+│   ├── ContentNotAvailableException
+│   │   ├── GeographicRestrictionException
+│   │   ├── AgeRestrictedContentException
+│   │   ├── PrivateContentException
+│   │   └── AccountTerminatedException
+│   ├── PaidContentException
+│   │   ├── YoutubeMusicPremiumContentException
+│   │   └── SoundCloudGoPlusContentException
+│   └── ContentNotSupportedException
+├── ReCaptchaException
+└── Custom service exceptions
+```
+
+## Common Exceptions
+
+<Steps>
+  <Step title="ExtractionException">
+    Base exception for all extraction errors:
+
+    ```java
+    import org.schabi.newpipe.extractor.exceptions.ExtractionException;
+    
+    try {
+        StreamInfo info = StreamInfo.getInfo(url);
+    } catch (ExtractionException e) {
+        // Catches all extraction-related errors
+        System.err.println("Extraction failed: " + e.getMessage());
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="ParsingException">
+    Thrown when parsing data fails:
+
+    ```java
+    import org.schabi.newpipe.extractor.exceptions.ParsingException;
+    
+    try {
+        StreamInfo info = StreamInfo.getInfo(url);
+        long views = info.getViewCount();
+    } catch (ParsingException e) {
+        System.err.println("Failed to parse content: " + e.getMessage());
+    }
+    ```
+  </Step>
+
+  <Step title="ContentNotAvailableException">
+    Content exists but cannot be accessed:
+
+    ```java
+    import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException;
+    
+    try {
+        StreamInfo info = StreamInfo.getInfo(url);
+    } catch (ContentNotAvailableException e) {
+        System.err.println("Content unavailable: " + e.getMessage());
+        // Could be deleted, private, or blocked
+    }
+    ```
+  </Step>
+</Steps>
+
+## Specific Exception Types
+
+<CodeGroup>
+```java Geographic Restrictions
+import org.schabi.newpipe.extractor.exceptions.GeographicRestrictionException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+} catch (GeographicRestrictionException e) {
+    System.err.println("Content blocked in your region");
+    System.err.println("Reason: " + e.getMessage());
+    
+    // Inform user about VPN or proxy options
+}
+```
+
+```java Age Restrictions
+import org.schabi.newpipe.extractor.exceptions.AgeRestrictedContentException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+} catch (AgeRestrictedContentException e) {
+    System.err.println("Age-restricted content");
+    System.err.println("Reason: " + e.getMessage());
+    
+    // Handle age verification if needed
+}
+```
+
+```java Private Content
+import org.schabi.newpipe.extractor.exceptions.PrivateContentException;
+
+try {
+    PlaylistInfo info = PlaylistInfo.getInfo(url);
+} catch (PrivateContentException e) {
+    System.err.println("Content is private");
+    System.err.println("Cannot access: " + e.getMessage());
+}
+```
+
+```java Terminated Accounts
+import org.schabi.newpipe.extractor.exceptions.AccountTerminatedException;
+
+try {
+    ChannelInfo info = ChannelInfo.getInfo(url);
+} catch (AccountTerminatedException e) {
+    System.err.println("Channel account has been terminated");
+    System.err.println("Reason: " + e.getMessage());
+}
+```
+</CodeGroup>
+
+## Paid Content Exceptions
+
+Handle premium or paid content:
+
+```java
+import org.schabi.newpipe.extractor.exceptions.PaidContentException;
+import org.schabi.newpipe.extractor.exceptions.YoutubeMusicPremiumContentException;
+import org.schabi.newpipe.extractor.exceptions.SoundCloudGoPlusContentException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+} catch (YoutubeMusicPremiumContentException e) {
+    System.err.println("YouTube Music Premium required");
+    System.err.println("This content requires a subscription");
+    
+} catch (SoundCloudGoPlusContentException e) {
+    System.err.println("SoundCloud Go+ required");
+    System.err.println("This content requires a subscription");
+    
+} catch (PaidContentException e) {
+    System.err.println("Paid content: " + e.getMessage());
+}
+```
+
+## ReCaptcha Handling
+
+<Warning>
+  Services may require reCAPTCHA verification when detecting automated access.
+</Warning>
+
+```java
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+} catch (ReCaptchaException e) {
+    String captchaUrl = e.getUrl();
+    
+    System.err.println("reCAPTCHA required");
+    System.err.println("Solve captcha at: " + captchaUrl);
+    
+    // In a GUI application, you might:
+    // 1. Open the captcha URL in a browser
+    // 2. Wait for user to solve it
+    // 3. Extract cookies and retry
+    
+    // For automated systems:
+    // Implement rate limiting and delays to avoid triggering captcha
+}
+```
+
+## Network Errors
+
+Handle IOException for network-related issues:
+
+```java
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+} catch (SocketTimeoutException e) {
+    System.err.println("Request timed out");
+    System.err.println("The server took too long to respond");
+    // Retry with exponential backoff
+    
+} catch (UnknownHostException e) {
+    System.err.println("Cannot resolve host");
+    System.err.println("Check your internet connection");
+    
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+    // Handle other network issues
+}
+```
+
+## Partial Extraction Errors
+
+Info objects collect errors during extraction:
+
+```java
+import org.schabi.newpipe.extractor.stream.StreamInfo;
+
+try {
+    StreamInfo info = StreamInfo.getInfo(url);
+    
+    // Check for partial extraction errors
+    List<Throwable> errors = info.getErrors();
+    
+    if (!errors.isEmpty()) {
+        System.out.println("\nExtraction completed with errors:");
+        
+        for (Throwable error : errors) {
+            System.err.println("- " + error.getClass().getSimpleName() + 
+                             ": " + error.getMessage());
+        }
+        
+        System.out.println("\nPartially extracted data is still available");
+    }
+    
+    // Use successfully extracted data
+    System.out.println("Title: " + info.getName());
+    
+    // Check if specific fields are available
+    if (info.getViewCount() != -1) {
+        System.out.println("Views: " + info.getViewCount());
+    }
+    
+} catch (ExtractionException | IOException e) {
+    System.err.println("Fatal extraction error: " + e.getMessage());
+}
+```
+
+## Comprehensive Error Handling
+
+Complete error handling pattern:
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.exceptions.*;
+import java.io.IOException;
+
+public class RobustExtractor {
+    
+    public static StreamInfo extractWithRetry(String url, int maxRetries) {
+        int attempts = 0;
+        long delay = 1000; // Start with 1 second
+        
+        while (attempts < maxRetries) {
+            try {
+                return StreamInfo.getInfo(url);
+                
+            } catch (ReCaptchaException e) {
+                System.err.println("reCAPTCHA required: " + e.getUrl());
+                throw new RuntimeException("Manual intervention required", e);
+                
+            } catch (ContentNotAvailableException e) {
+                // Don't retry for content that's not available
+                handleContentNotAvailable(e);
+                throw new RuntimeException("Content unavailable", e);
+                
+            } catch (PaidContentException e) {
+                System.err.println("Paid content: " + e.getMessage());
+                throw new RuntimeException("Subscription required", e);
+                
+            } catch (SocketTimeoutException e) {
+                attempts++;
+                if (attempts >= maxRetries) {
+                    throw new RuntimeException("Max retries exceeded", e);
+                }
+                
+                System.err.println("Timeout, retrying in " + delay + "ms...");
+                sleep(delay);
+                delay *= 2; // Exponential backoff
+                
+            } catch (IOException e) {
+                attempts++;
+                if (attempts >= maxRetries) {
+                    throw new RuntimeException("Network error after retries", e);
+                }
+                
+                System.err.println("Network error, retrying...");
+                sleep(delay);
+                delay *= 2;
+                
+            } catch (ExtractionException e) {
+                System.err.println("Extraction error: " + e.getMessage());
+                throw new RuntimeException("Extraction failed", e);
+            }
+        }
+        
+        throw new RuntimeException("Failed to extract after " + maxRetries + " attempts");
+    }
+    
+    private static void handleContentNotAvailable(ContentNotAvailableException e) {
+        if (e instanceof GeographicRestrictionException) {
+            System.err.println("Geographic restriction");
+        } else if (e instanceof AgeRestrictedContentException) {
+            System.err.println("Age restricted");
+        } else if (e instanceof PrivateContentException) {
+            System.err.println("Private content");
+        } else if (e instanceof AccountTerminatedException) {
+            System.err.println("Account terminated");
+        } else {
+            System.err.println("Content not available: " + e.getMessage());
+        }
+    }
+    
+    private static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+```
+
+## Validation Before Extraction
+
+Validate URLs and content before extraction:
+
+```java
+import org.schabi.newpipe.extractor.StreamingService;
+import org.schabi.newpipe.extractor.StreamingService.LinkType;
+
+public boolean isValidUrl(String url) {
+    try {
+        StreamingService service = NewPipe.getServiceByUrl(url);
+        LinkType linkType = service.getLinkTypeByUrl(url);
+        
+        return linkType != LinkType.NONE;
+        
+    } catch (ExtractionException e) {
+        System.err.println("Invalid URL: " + e.getMessage());
+        return false;
+    }
+}
+
+public void extractSafely(String url) {
+    if (!isValidUrl(url)) {
+        System.err.println("URL is not supported");
+        return;
+    }
+    
+    try {
+        StreamInfo info = StreamInfo.getInfo(url);
+        // Process info
+        
+    } catch (Exception e) {
+        handleException(e);
+    }
+}
+```
+
+## Logging Errors
+
+Implement proper error logging:
+
+```java
+import java.util.logging.*;
+
+public class ExtractorWithLogging {
+    private static final Logger logger = 
+        Logger.getLogger(ExtractorWithLogging.class.getName());
+    
+    public static void extract(String url) {
+        try {
+            StreamInfo info = StreamInfo.getInfo(url);
+            
+            // Log partial errors
+            List<Throwable> errors = info.getErrors();
+            if (!errors.isEmpty()) {
+                logger.warning("Partial extraction errors: " + errors.size());
+                for (Throwable error : errors) {
+                    logger.log(Level.WARNING, "Partial error", error);
+                }
+            }
+            
+        } catch (ContentNotAvailableException e) {
+            logger.log(Level.WARNING, "Content not available", e);
+            
+        } catch (ReCaptchaException e) {
+            logger.log(Level.SEVERE, "reCAPTCHA required: " + e.getUrl(), e);
+            
+        } catch (ExtractionException e) {
+            logger.log(Level.SEVERE, "Extraction failed", e);
+            
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Network error", e);
+        }
+    }
+}
+```
+
+## Best Practices
+
+<Tip>
+  Follow these guidelines for robust error handling:
+</Tip>
+
+1. **Always catch specific exceptions first** - Handle specific cases before generic ones
+2. **Check partial errors** - Use `getErrors()` to see what failed during extraction
+3. **Implement retry logic** - Use exponential backoff for network errors
+4. **Don't retry everything** - Some errors (like content not available) shouldn't be retried
+5. **Log errors appropriately** - Different severity levels for different error types
+6. **Validate input** - Check URLs before attempting extraction
+7. **Handle reCAPTCHA gracefully** - Inform users and provide captcha URL
+8. **Use fallback values** - Many fields return `-1` or empty when unavailable
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.exceptions.*;
+import org.schabi.newpipe.extractor.stream.*;
+import java.io.IOException;
+
+public class ErrorHandlingExample {
+    public static void main(String[] args) {
+        NewPipe.init(yourDownloader);
+        
+        String url = "https://www.youtube.com/watch?v=VIDEO_ID";
+        
+        try {
+            StreamInfo info = StreamInfo.getInfo(url);
+            
+            // Check for partial errors
+            if (!info.getErrors().isEmpty()) {
+                System.out.println("⚠ Some data failed to extract");
+            }
+            
+            System.out.println("Title: " + info.getName());
+            System.out.println("Uploader: " + info.getUploaderName());
+            
+        } catch (GeographicRestrictionException e) {
+            System.err.println("❌ Video blocked in your region");
+            
+        } catch (AgeRestrictedContentException e) {
+            System.err.println("❌ Age-restricted content");
+            
+        } catch (PrivateContentException e) {
+            System.err.println("❌ Private video");
+            
+        } catch (ContentNotAvailableException e) {
+            System.err.println("❌ Video not available: " + e.getMessage());
+            
+        } catch (ReCaptchaException e) {
+            System.err.println("❌ reCAPTCHA required");
+            System.err.println("   Solve at: " + e.getUrl());
+            
+        } catch (ExtractionException e) {
+            System.err.println("❌ Extraction failed: " + e.getMessage());
+            e.printStackTrace();
+            
+        } catch (IOException e) {
+            System.err.println("❌ Network error: " + e.getMessage());
+        }
+    }
+}
+```
+
+## Next Steps
+
+- Learn about [extracting stream data](/guides/extracting-streams)
+- Explore [channel extraction](/guides/extracting-channels)
+- Understand [search functionality](/guides/search)

@@ -1,0 +1,561 @@
+---
+title: Extractor Pattern
+description: Understanding the Extractor pattern for data extraction from streaming services
+---
+
+Extractors are the core data extraction components in NewPipe Extractor. Each extractor is responsible for fetching and parsing data from a specific type of content (streams, channels, playlists, etc.).
+
+## Base Extractor Class
+
+All extractors inherit from the abstract `Extractor` class:
+
+```java
+public abstract class Extractor {
+    private final StreamingService service;
+    private final LinkHandler linkHandler;
+    private final Downloader downloader;
+    private boolean pageFetched = false;
+    
+    protected Extractor(StreamingService service, 
+                       LinkHandler linkHandler) {
+        this.service = Objects.requireNonNull(service);
+        this.linkHandler = Objects.requireNonNull(linkHandler);
+        this.downloader = Objects.requireNonNull(NewPipe.getDownloader());
+    }
+    
+    public abstract void onFetchPage(Downloader downloader) 
+            throws IOException, ExtractionException;
+    
+    public abstract String getName() throws ParsingException;
+}
+```
+
+## Two-Phase Extraction
+
+Extractors follow a two-phase pattern to separate object creation from data fetching:
+
+### Phase 1: Initialization
+
+Create the extractor with a `LinkHandler`:
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+StreamExtractor extractor = service.getStreamExtractor(
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+);
+// Extractor created, but no data fetched yet
+```
+
+### Phase 2: Fetching
+
+Call `fetchPage()` to download and parse data:
+
+```java
+extractor.fetchPage();  // Downloads and parses the page
+String title = extractor.getName();
+long views = extractor.getViewCount();
+```
+
+<Warning>
+Always call `fetchPage()` before accessing extractor data. Calling getter methods before `fetchPage()` will throw `IllegalStateException`.
+</Warning>
+
+## Fetch Page Implementation
+
+The `fetchPage()` method ensures data is fetched only once:
+
+```java
+public void fetchPage() throws IOException, ExtractionException {
+    if (pageFetched) {
+        return;  // Already fetched, skip
+    }
+    onFetchPage(downloader);
+    pageFetched = true;
+}
+
+protected void assertPageFetched() {
+    if (!pageFetched) {
+        throw new IllegalStateException(
+            "Page is not fetched. Make sure you call fetchPage()"
+        );
+    }
+}
+
+protected boolean isPageFetched() {
+    return pageFetched;
+}
+```
+
+## Extractor Types
+
+<Tabs>
+  <Tab title="StreamExtractor">
+    Extracts data from individual video/audio streams.
+    
+    ```java
+    public abstract class StreamExtractor extends Extractor {
+        // Metadata
+        public abstract List<Image> getThumbnails() throws ParsingException;
+        public Description getDescription() throws ParsingException;
+        public long getLength() throws ParsingException;
+        public long getViewCount() throws ParsingException;
+        public long getLikeCount() throws ParsingException;
+        
+        // Uploader info
+        public abstract String getUploaderName() throws ParsingException;
+        public abstract String getUploaderUrl() throws ParsingException;
+        public List<Image> getUploaderAvatars() throws ParsingException;
+        public boolean isUploaderVerified() throws ParsingException;
+        
+        // Media streams
+        public abstract List<AudioStream> getAudioStreams() 
+                throws IOException, ExtractionException;
+        public abstract List<VideoStream> getVideoStreams() 
+                throws IOException, ExtractionException;
+        public abstract List<VideoStream> getVideoOnlyStreams() 
+                throws IOException, ExtractionException;
+        
+        // Additional features
+        public abstract StreamType getStreamType() throws ParsingException;
+        public List<SubtitlesStream> getSubtitlesDefault() 
+                throws IOException, ExtractionException;
+        public InfoItemsCollector getRelatedItems() 
+                throws IOException, ExtractionException;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="ChannelExtractor">
+    Extracts data from content creator channels.
+    
+    ```java
+    public abstract class ChannelExtractor extends Extractor {
+        public abstract List<Image> getAvatars() throws ParsingException;
+        public abstract List<Image> getBanners() throws ParsingException;
+        public String getFeedUrl() throws ParsingException;
+        public long getSubscriberCount() throws ParsingException;
+        public String getDescription() throws ParsingException;
+        public List<ListLinkHandler> getTabs() throws ParsingException;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="PlaylistExtractor">
+    Extracts playlist content and metadata.
+    
+    ```java
+    public abstract class PlaylistExtractor extends ListExtractor {
+        public List<Image> getThumbnails() throws ParsingException;
+        public String getUploaderUrl() throws ParsingException;
+        public String getUploaderName() throws ParsingException;
+        public List<Image> getUploaderAvatars() throws ParsingException;
+        public long getStreamCount() throws ParsingException;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="SearchExtractor">
+    Extracts search results with filtering support.
+    
+    ```java
+    public abstract class SearchExtractor extends ListExtractor {
+        protected final String searchString;
+        
+        public String getSearchString() {
+            return searchString;
+        }
+        
+        public boolean isCorrectedSearch() throws ParsingException;
+        public List<MetaInfo> getMetaInfo() throws ParsingException;
+    }
+    ```
+  </Tab>
+  
+  <Tab title="CommentsExtractor">
+    Extracts comment threads and replies.
+    
+    ```java
+    public abstract class CommentsExtractor extends ListExtractor {
+        public boolean isCommentsDisabled() throws ParsingException;
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Common Extractor Methods
+
+All extractors inherit these methods from the base `Extractor` class:
+
+```java
+// Identity
+public String getId() throws ParsingException;
+public abstract String getName() throws ParsingException;
+
+// URLs
+public String getOriginalUrl() throws ParsingException;
+public String getUrl() throws ParsingException;
+public String getBaseUrl() throws ParsingException;
+
+// Service reference
+public StreamingService getService();
+public int getServiceId();
+
+// Access to downloader
+public Downloader getDownloader();
+
+// Link handler
+public LinkHandler getLinkHandler();
+```
+
+## StreamExtractor Deep Dive
+
+`StreamExtractor` is the most complex extractor, handling video and audio streams:
+
+### Basic Metadata
+
+```java
+// Required methods
+public abstract List<Image> getThumbnails() throws ParsingException;
+public abstract String getUploaderUrl() throws ParsingException;
+public abstract String getUploaderName() throws ParsingException;
+public abstract StreamType getStreamType() throws ParsingException;
+
+// Optional methods with default implementations
+public Description getDescription() throws ParsingException {
+    return Description.EMPTY_DESCRIPTION;
+}
+
+public long getLength() throws ParsingException {
+    return 0;  // 0 for livestreams
+}
+
+public long getViewCount() throws ParsingException {
+    return -1;  // -1 if not available
+}
+
+public long getLikeCount() throws ParsingException {
+    return -1;
+}
+```
+
+### Upload Date
+
+```java
+// Textual date from service
+public String getTextualUploadDate() throws ParsingException {
+    return null;
+}
+
+// Parsed date object
+public DateWrapper getUploadDate() throws ParsingException {
+    return null;
+}
+```
+
+<Info>
+For live streams, both upload date methods should return `null`.
+</Info>
+
+### Media Stream URLs
+
+```java
+// Audio streams (no video)
+public abstract List<AudioStream> getAudioStreams() 
+        throws IOException, ExtractionException;
+
+// Video streams with audio
+public abstract List<VideoStream> getVideoStreams() 
+        throws IOException, ExtractionException;
+
+// Video streams without audio (requires separate audio)
+public abstract List<VideoStream> getVideoOnlyStreams() 
+        throws IOException, ExtractionException;
+
+// DASH manifest URL
+public String getDashMpdUrl() throws ParsingException {
+    return "";
+}
+
+// HLS playlist URL
+public String getHlsUrl() throws ParsingException {
+    return "";
+}
+```
+
+<Note>
+You must return at least one of: audio streams, video streams, video-only streams, DASH URL, or HLS URL. Otherwise, extraction is considered failed.
+</Note>
+
+### Subtitles
+
+```java
+// Default subtitles
+public List<SubtitlesStream> getSubtitlesDefault() 
+        throws IOException, ExtractionException {
+    return Collections.emptyList();
+}
+
+// Subtitles filtered by format
+public List<SubtitlesStream> getSubtitles(MediaFormat format) 
+        throws IOException, ExtractionException {
+    return Collections.emptyList();
+}
+```
+
+### Additional Metadata
+
+```java
+// Age restriction
+public int getAgeLimit() throws ParsingException {
+    return NO_AGE_LIMIT;  // 0 = no restriction
+}
+
+// Privacy setting
+public Privacy getPrivacy() throws ParsingException {
+    return Privacy.PUBLIC;
+}
+
+// Category
+public String getCategory() throws ParsingException {
+    return "";
+}
+
+// Tags
+public List<String> getTags() throws ParsingException {
+    return Collections.emptyList();
+}
+
+// License
+public String getLicence() throws ParsingException {
+    return "";
+}
+
+// Language
+public Locale getLanguageInfo() throws ParsingException {
+    return null;
+}
+```
+
+### Related Content
+
+```java
+public InfoItemsCollector<? extends InfoItem, ? extends InfoItemExtractor>
+getRelatedItems() throws IOException, ExtractionException {
+    return null;  // null if not available
+}
+```
+
+### Timeline Features
+
+```java
+// Timestamp in URL (e.g., ?t=120 for 2 minutes)
+public long getTimeStamp() throws ParsingException {
+    return 0;
+}
+
+// Chapter segments
+public List<StreamSegment> getStreamSegments() throws ParsingException {
+    return Collections.emptyList();
+}
+
+// Preview frames/thumbnails
+public List<Frameset> getFrames() throws ExtractionException {
+    return Collections.emptyList();
+}
+```
+
+### Meta Information
+
+```java
+// Additional context (e.g., COVID-19 info, fact-checks)
+public List<MetaInfo> getMetaInfo() throws ParsingException {
+    return Collections.emptyList();
+}
+
+// Short-form content detection (YouTube Shorts, TikTok)
+public boolean isShortFormContent() throws ParsingException {
+    return false;
+}
+```
+
+## Localization in Extractors
+
+Extractors support per-instance localization:
+
+```java
+// Force specific localization
+public void forceLocalization(Localization localization);
+public void forceContentCountry(ContentCountry contentCountry);
+
+// Get active localization
+public Localization getExtractorLocalization() {
+    return forcedLocalization == null 
+        ? getService().getLocalization() 
+        : forcedLocalization;
+}
+
+public ContentCountry getExtractorContentCountry() {
+    return forcedContentCountry == null 
+        ? getService().getContentCountry() 
+        : forcedContentCountry;
+}
+
+// Get time ago parser for parsing relative dates
+public TimeAgoParser getTimeAgoParser() {
+    return getService().getTimeAgoParser(getExtractorLocalization());
+}
+```
+
+### Usage Example
+
+```java
+StreamExtractor extractor = service.getStreamExtractor(url);
+
+// Force German localization
+extractor.forceLocalization(new Localization("de", "DE"));
+extractor.forceContentCountry(new ContentCountry("DE"));
+
+extractor.fetchPage();
+String title = extractor.getName();  // Title in German if available
+```
+
+## Implementation Example
+
+Here's a simplified extractor implementation:
+
+```java
+public class YoutubeStreamExtractor extends StreamExtractor {
+    private JsonObject playerResponse;
+    private JsonObject videoDetails;
+    
+    public YoutubeStreamExtractor(StreamingService service, 
+                                 LinkHandler linkHandler) {
+        super(service, linkHandler);
+    }
+    
+    @Override
+    public void onFetchPage(Downloader downloader) 
+            throws IOException, ExtractionException {
+        // Download page
+        String pageContent = downloader.get(getUrl()).responseBody();
+        
+        // Parse JSON data
+        playerResponse = JsonParser.object()
+            .from(extractPlayerResponse(pageContent));
+        videoDetails = playerResponse.getObject("videoDetails");
+    }
+    
+    @Override
+    public String getName() throws ParsingException {
+        assertPageFetched();
+        return videoDetails.getString("title");
+    }
+    
+    @Override
+    public long getViewCount() throws ParsingException {
+        assertPageFetched();
+        return Long.parseLong(videoDetails.getString("viewCount"));
+    }
+    
+    @Override
+    public List<AudioStream> getAudioStreams() 
+            throws IOException, ExtractionException {
+        assertPageFetched();
+        List<AudioStream> audioStreams = new ArrayList<>();
+        
+        JsonArray formats = playerResponse
+            .getObject("streamingData")
+            .getArray("adaptiveFormats");
+            
+        for (Object format : formats) {
+            JsonObject f = (JsonObject) format;
+            if (f.has("mimeType") && 
+                f.getString("mimeType").startsWith("audio")) {
+                audioStreams.add(new AudioStream(
+                    f.getString("url"),
+                    MediaFormat.fromMimeType(f.getString("mimeType")),
+                    f.getInt("bitrate")
+                ));
+            }
+        }
+        
+        return audioStreams;
+    }
+    
+    // ... implement other required methods
+}
+```
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="Return Defaults for Optional Data">
+    Many methods have default implementations that return empty/null values:
+    
+    ```java
+    public String getCategory() throws ParsingException {
+        return "";  // Empty string if not available
+    }
+    
+    public long getLikeCount() throws ParsingException {
+        return -1;  // -1 if not available
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Throw ParsingException for Required Data">
+    If required data cannot be extracted, throw `ParsingException`:
+    
+    ```java
+    public String getName() throws ParsingException {
+        assertPageFetched();
+        String title = videoDetails.getString("title");
+        if (title == null || title.isEmpty()) {
+            throw new ParsingException("Could not extract title");
+        }
+        return title;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle Content Availability">
+    Check if content is available:
+    
+    ```java
+    public String getErrorMessage() {
+        // Parse error from page if video is unavailable
+        return null;
+    }
+    
+    public ContentAvailability getContentAvailability() 
+            throws ParsingException {
+        if (isPrivate) return ContentAvailability.PRIVATE;
+        if (isDeleted) return ContentAvailability.REMOVED;
+        return ContentAvailability.AVAILABLE;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+1. **Always call `assertPageFetched()` in getter methods** to ensure data is available
+2. **Return default values instead of throwing exceptions** for optional data
+3. **Cache parsed data** to avoid re-parsing on multiple getter calls
+4. **Use meaningful exception messages** to help with debugging
+5. **Handle platform-specific edge cases** (e.g., YouTube Shorts, live streams)
+6. **Test with various content types** (public, private, deleted, geo-blocked)
+
+## Related Documentation
+
+<CardGroup cols={3}>
+  <Card title="Services" icon="server" href="/core-concepts/services">
+    Understand StreamingService architecture
+  </Card>
+  <Card title="Link Handlers" icon="link" href="/core-concepts/link-handlers">
+    Learn about URL parsing
+  </Card>
+  <Card title="Localization" icon="globe" href="/core-concepts/localization">
+    Configure language preferences
+  </Card>
+</CardGroup>

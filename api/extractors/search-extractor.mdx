@@ -1,0 +1,334 @@
+---
+title: SearchExtractor
+description: API reference for SearchExtractor class - extracts search results from streaming services
+---
+
+## Overview
+
+The `SearchExtractor` class extracts search results from streaming services. It extends `ListExtractor<InfoItem>` and provides methods to retrieve search results with pagination, search suggestions, and meta information.
+
+**Package:** `org.schabi.newpipe.extractor.search`
+
+**Extends:** `ListExtractor<InfoItem>`
+
+## Constructor
+
+<ParamField path="service" type="StreamingService" required>
+  The streaming service this extractor belongs to
+</ParamField>
+
+<ParamField path="linkHandler" type="SearchQueryHandler" required>
+  The search query handler containing the search query and filters
+</ParamField>
+
+## Base Methods (Inherited from Extractor)
+
+### getId()
+
+```java
+public String getId() throws ParsingException
+```
+
+Returns the unique identifier for this search.
+
+<ResponseField name="return" type="String">
+  The search identifier
+</ResponseField>
+
+### getName()
+
+```java
+public String getName() throws ParsingException
+```
+
+Returns the search query string.
+
+<ResponseField name="return" type="String">
+  The search query (same as `getSearchString()`)
+</ResponseField>
+
+### getUrl()
+
+```java
+public String getUrl() throws ParsingException
+```
+
+Returns the URL for this search.
+
+<ResponseField name="return" type="String">
+  The search URL
+</ResponseField>
+
+### getOriginalUrl()
+
+```java
+public String getOriginalUrl() throws ParsingException
+```
+
+Returns the original URL as provided.
+
+<ResponseField name="return" type="String">
+  The original URL
+</ResponseField>
+
+### getBaseUrl()
+
+```java
+public String getBaseUrl() throws ParsingException
+```
+
+Returns the base URL of the service.
+
+<ResponseField name="return" type="String">
+  The base URL
+</ResponseField>
+
+### fetchPage()
+
+```java
+public void fetchPage() throws IOException, ExtractionException
+```
+
+Fetches the search results page. Must be called before accessing other data methods.
+
+### getService()
+
+```java
+public StreamingService getService()
+```
+
+Returns the streaming service this extractor belongs to.
+
+<ResponseField name="return" type="StreamingService">
+  The associated streaming service
+</ResponseField>
+
+### getServiceId()
+
+```java
+public int getServiceId()
+```
+
+Returns the numeric ID of the streaming service.
+
+<ResponseField name="return" type="int">
+  The service ID
+</ResponseField>
+
+## List Extraction Methods (Inherited from ListExtractor)
+
+### getInitialPage()
+
+```java
+public abstract InfoItemsPage<InfoItem> getInitialPage() throws IOException, ExtractionException
+```
+
+Returns the first page of search results.
+
+<ResponseField name="return" type="InfoItemsPage<InfoItem>">
+  Page object containing initial results and next page reference
+</ResponseField>
+
+### getPage()
+
+```java
+public abstract InfoItemsPage<InfoItem> getPage(Page page) throws IOException, ExtractionException
+```
+
+Returns a specific page of search results.
+
+<ParamField path="page" type="Page" required>
+  The page reference obtained from a previous page's `getNextPage()` method
+</ParamField>
+
+<ResponseField name="return" type="InfoItemsPage<InfoItem>">
+  Page object containing results and next page reference
+</ResponseField>
+
+## Search-Specific Methods
+
+### getSearchString()
+
+```java
+public String getSearchString()
+```
+
+Returns the search query string.
+
+<ResponseField name="return" type="String">
+  The search query used for this search
+</ResponseField>
+
+### getSearchSuggestion()
+
+```java
+public abstract String getSearchSuggestion() throws ParsingException
+```
+
+Returns a search suggestion or corrected query provided by the service.
+
+<ResponseField name="return" type="String">
+  Suggested search query, corrected query if `isCorrectedSearch()` is true, or empty string
+</ResponseField>
+
+### isCorrectedSearch()
+
+```java
+public abstract boolean isCorrectedSearch() throws ParsingException
+```
+
+Returns whether the search was automatically corrected by the service.
+
+For example, searching for "pewdeipie" on YouTube returns results for "pewdiepie".
+
+<ResponseField name="return" type="boolean">
+  `true` if the search was corrected, `false` otherwise
+</ResponseField>
+
+### getMetaInfo()
+
+```java
+public abstract List<MetaInfo> getMetaInfo() throws ParsingException
+```
+
+Returns additional meta information about the search results.
+
+For example, searching for "Covid-19" on YouTube shows a WHO information box.
+
+<ResponseField name="return" type="List<MetaInfo>">
+  List of meta information objects, or empty list if unavailable
+</ResponseField>
+
+### getLinkHandler()
+
+```java
+public SearchQueryHandler getLinkHandler()
+```
+
+Returns the search query handler (type-safe override).
+
+<ResponseField name="return" type="SearchQueryHandler">
+  The search query handler for this extractor
+</ResponseField>
+
+## Localization Methods
+
+### forceLocalization()
+
+```java
+public void forceLocalization(Localization localization)
+```
+
+Forces a specific localization for this extractor.
+
+<ParamField path="localization" type="Localization" required>
+  The localization to use
+</ParamField>
+
+### forceContentCountry()
+
+```java
+public void forceContentCountry(ContentCountry contentCountry)
+```
+
+Forces a specific content country for this extractor.
+
+<ParamField path="contentCountry" type="ContentCountry" required>
+  The content country to use
+</ParamField>
+
+## NothingFoundException
+
+The `SearchExtractor.NothingFoundException` is thrown when a search returns no results.
+
+```java
+public static class NothingFoundException extends ExtractionException
+```
+
+<ParamField path="message" type="String" required>
+  Error message describing the exception
+</ParamField>
+
+## Usage Example
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+SearchQueryHandler queryHandler = service.getSearchQHFactory()
+    .fromQuery("NewPipe Extractor");
+SearchExtractor extractor = service.getSearchExtractor(queryHandler);
+
+// Fetch the page first
+extractor.fetchPage();
+
+// Get search information
+String searchQuery = extractor.getSearchString();
+String suggestion = extractor.getSearchSuggestion();
+boolean corrected = extractor.isCorrectedSearch();
+
+// Get meta info (e.g., COVID-19 warnings)
+List<MetaInfo> metaInfo = extractor.getMetaInfo();
+
+// Get first page of results
+InfoItemsPage<InfoItem> initialPage = extractor.getInitialPage();
+List<InfoItem> results = initialPage.getItems();
+
+// Process results (can be streams, channels, or playlists)
+for (InfoItem item : results) {
+    if (item instanceof StreamInfoItem) {
+        StreamInfoItem stream = (StreamInfoItem) item;
+        System.out.println("Video: " + stream.getName());
+    } else if (item instanceof ChannelInfoItem) {
+        ChannelInfoItem channel = (ChannelInfoItem) item;
+        System.out.println("Channel: " + channel.getName());
+    } else if (item instanceof PlaylistInfoItem) {
+        PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+        System.out.println("Playlist: " + playlist.getName());
+    }
+}
+
+// Get next page
+Page nextPage = initialPage.getNextPage();
+if (nextPage != null) {
+    InfoItemsPage<InfoItem> page = extractor.getPage(nextPage);
+    // Process next page results...
+}
+```
+
+## Search with Filters
+
+```java
+StreamingService service = NewPipe.getService("YouTube");
+SearchQueryHandler queryHandler = service.getSearchQHFactory()
+    .fromQuery("NewPipe", 
+               Collections.singletonList("videos"),  // Filter: videos only
+               "");                                   // Sort filter
+SearchExtractor extractor = service.getSearchExtractor(queryHandler);
+
+extractor.fetchPage();
+InfoItemsPage<InfoItem> results = extractor.getInitialPage();
+```
+
+## InfoItemsPage Object
+
+The `InfoItemsPage` returned by `getInitialPage()` and `getPage()` contains:
+
+<ResponseField name="items" type="List<InfoItem>">
+  The list of search result items (can be StreamInfoItem, ChannelInfoItem, or PlaylistInfoItem)
+</ResponseField>
+
+<ResponseField name="nextPage" type="Page">
+  Reference to the next page, or null if this is the last page
+</ResponseField>
+
+<ResponseField name="errors" type="List<Throwable>">
+  Any errors that occurred during extraction of this page
+</ResponseField>
+
+## Notes
+
+- Always call `fetchPage()` before accessing search results
+- Search results can contain mixed types (videos, channels, playlists)
+- Use `isCorrectedSearch()` to detect when the service modified your query
+- The `getSearchSuggestion()` method provides alternative search terms or the corrected query
+- Some services may provide meta information boxes for certain search terms
+- Handle `NothingFoundException` when no results are found

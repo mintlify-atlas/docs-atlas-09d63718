@@ -1,0 +1,692 @@
+---
+title: Exceptions
+description: Exception hierarchy for error handling during extraction
+---
+
+NewPipe Extractor defines a comprehensive exception hierarchy to handle various error conditions that can occur during content extraction. All extraction-specific exceptions extend from `ExtractionException`.
+
+## Exception Hierarchy
+
+```
+Exception
+└── ExtractionException
+    ├── ParsingException
+    │   ├── ContentNotAvailableException
+    │   │   ├── AgeRestrictedContentException
+    │   │   ├── GeographicRestrictionException
+    │   │   ├── PaidContentException
+    │   │   ├── PrivateContentException
+    │   │   ├── AccountTerminatedException
+    │   │   ├── YoutubeMusicPremiumContentException
+    │   │   ├── SoundCloudGoPlusContentException
+    │   │   └── UnsupportedContentInCountryException
+    │   ├── ContentNotSupportedException
+    │   ├── FoundAdException
+    │   └── SignInConfirmNotBotException
+    └── ReCaptchaException
+
+UnsupportedOperationException
+└── UnsupportedTabException
+```
+
+## Base Exceptions
+
+### ExtractionException
+
+The root exception for all extraction-related errors. This is the base class that all other extraction exceptions extend.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message describing what went wrong
+</ParamField>
+
+```java
+throw new ExtractionException("Failed to extract video information");
+```
+
+<ParamField path="cause" type="Throwable" required>
+  The underlying cause of this exception
+</ParamField>
+
+```java
+throw new ExtractionException(ioException);
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+```java
+throw new ExtractionException("Failed to parse JSON", jsonException);
+```
+
+**When thrown:** Base exception rarely thrown directly; use specific subclasses instead.
+
+### ReCaptchaException
+
+Thrown when the service requires CAPTCHA verification before proceeding. Extends `ExtractionException`.
+
+#### Constructor
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+<ParamField path="url" type="String" required>
+  The CAPTCHA URL that needs to be solved
+</ParamField>
+
+```java
+if (response.responseCode() == 429) {
+    throw new ReCaptchaException(
+        "CAPTCHA required",
+        "https://www.google.com/recaptcha/..."
+    );
+}
+```
+
+#### Methods
+
+<ResponseField name="getUrl" type="String">
+  Returns the CAPTCHA URL
+</ResponseField>
+
+```java
+try {
+    // Extraction code
+} catch (ReCaptchaException e) {
+    String captchaUrl = e.getUrl();
+    // Redirect user to solve CAPTCHA
+}
+```
+
+**When thrown:** When a service detects automated requests and requires CAPTCHA verification. Common with YouTube when making too many requests.
+
+## Parsing Exceptions
+
+### ParsingException
+
+Thrown when content cannot be parsed correctly. This is a general parsing error. Extends `ExtractionException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message describing the parsing failure
+</ParamField>
+
+```java
+throw new ParsingException("Could not extract video ID from URL");
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+```java
+try {
+    int viewCount = Integer.parseInt(viewCountStr);
+} catch (NumberFormatException e) {
+    throw new ParsingException("Invalid view count format", e);
+}
+```
+
+**When thrown:** When JSON/HTML parsing fails, regex doesn't match, or data format is unexpected.
+
+### ContentNotSupportedException
+
+Thrown when the content type is not supported by the extractor. Extends `ParsingException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+throw new ContentNotSupportedException("Shorts are not supported");
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When encountering content types the extractor doesn't handle (e.g., live streams, premieres, posts).
+
+### FoundAdException
+
+Thrown when an advertisement is encountered instead of actual content. Extends `ParsingException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+if (isAd(item)) {
+    throw new FoundAdException("Item is an advertisement");
+}
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When parsing feed items or search results and encountering sponsored/ad content.
+
+### SignInConfirmNotBotException
+
+Thrown when the service requires logging in to confirm the user is not a bot. Extends `ParsingException`.
+
+#### Constructor
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+if (requiresSignIn) {
+    throw new SignInConfirmNotBotException(
+        "Service requires sign-in to verify you're not a bot"
+    );
+}
+```
+
+**When thrown:** Usually when the service detects bot-like behavior and requires authentication. Often only solvable by changing IP address (e.g., with YouTube).
+
+## Content Availability Exceptions
+
+### ContentNotAvailableException
+
+Thrown when content exists but cannot be accessed for various reasons. Extends `ParsingException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message describing why content is unavailable
+</ParamField>
+
+```java
+throw new ContentNotAvailableException("Video has been removed");
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** Generic availability error. Usually use specific subclasses instead.
+
+### AgeRestrictedContentException
+
+Thrown when content is age-restricted and requires verification. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+if (isAgeRestricted) {
+    throw new AgeRestrictedContentException(
+        "This video is age-restricted"
+    );
+}
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When content requires age verification to view (18+ content).
+
+### GeographicRestrictionException
+
+Thrown when content is blocked in specific geographic regions due to distribution rights. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+throw new GeographicRestrictionException(
+    "This video is not available in your country"
+);
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When content is intentionally geo-blocked for licensing/distribution reasons.
+
+### UnsupportedContentInCountryException
+
+Thrown when content is not supported in a specific country, but not due to intentional geographic restrictions. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+throw new UnsupportedContentInCountryException(
+    "This content type is not available in this region"
+);
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When content is unavailable in a country for reasons other than distribution rights. Different from `GeographicRestrictionException`.
+
+### PaidContentException
+
+Thrown when content requires payment to access. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+if (requiresPurchase) {
+    throw new PaidContentException(
+        "This content requires payment"
+    );
+}
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When content is behind a paywall or requires purchase.
+
+### PrivateContentException
+
+Thrown when content is private and not publicly accessible. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+
+```java
+if (isPrivate) {
+    throw new PrivateContentException(
+        "This video is private"
+    );
+}
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+**When thrown:** When content is set to private by the uploader.
+
+### YoutubeMusicPremiumContentException
+
+Thrown when encountering YouTube Music Premium exclusive content. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+```java
+throw new YoutubeMusicPremiumContentException();
+```
+
+Default message: "This video is a YouTube Music Premium video"
+
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+```java
+throw new YoutubeMusicPremiumContentException(cause);
+```
+
+**When thrown:** When extracting YouTube content that requires YouTube Music Premium.
+
+### SoundCloudGoPlusContentException
+
+Thrown when encountering SoundCloud Go+ exclusive content. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+```java
+throw new SoundCloudGoPlusContentException();
+```
+
+Default message: "This track is a SoundCloud Go+ track"
+
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+```java
+throw new SoundCloudGoPlusContentException(cause);
+```
+
+**When thrown:** When extracting SoundCloud content that requires SoundCloud Go+ subscription.
+
+### AccountTerminatedException
+
+Thrown when the content owner's account has been terminated. Extends `ContentNotAvailableException`.
+
+#### Constructors
+
+<ParamField path="message" type="String" required>
+  Error message describing the termination
+</ParamField>
+
+```java
+throw new AccountTerminatedException(
+    "This account has been terminated"
+);
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="reason" type="Reason" required>
+  The reason for termination
+</ParamField>
+
+```java
+throw new AccountTerminatedException(
+    "Account terminated for community guidelines violation",
+    AccountTerminatedException.Reason.VIOLATION
+);
+```
+
+<ParamField path="message" type="String" required>
+  Error message
+</ParamField>
+<ParamField path="cause" type="Throwable" required>
+  Underlying cause
+</ParamField>
+
+#### Methods
+
+<ResponseField name="getReason" type="Reason">
+  The reason for account termination
+</ResponseField>
+
+#### Reason Enum
+
+<ResponseField name="UNKNOWN" type="Reason">
+  Termination reason is unknown
+</ResponseField>
+
+<ResponseField name="VIOLATION" type="Reason">
+  Account terminated for policy violations
+</ResponseField>
+
+**Example:**
+```java
+try {
+    // Extract content
+} catch (AccountTerminatedException e) {
+    AccountTerminatedException.Reason reason = e.getReason();
+    if (reason == AccountTerminatedException.Reason.VIOLATION) {
+        System.out.println("Account terminated for violations");
+    }
+}
+```
+
+**When thrown:** When attempting to extract content from a terminated channel or account.
+
+## Other Exceptions
+
+### UnsupportedTabException
+
+Thrown when attempting to access an unsupported tab in a service. Extends `UnsupportedOperationException` (not `ExtractionException`).
+
+#### Constructor
+
+<ParamField path="unsupportedTab" type="String" required>
+  Name of the unsupported tab
+</ParamField>
+
+```java
+if (!supportedTabs.contains(tabName)) {
+    throw new UnsupportedTabException(tabName);
+}
+```
+
+Message format: "Unsupported tab {tabName}"
+
+**When thrown:** When a channel or page tab is not supported by the extractor (e.g., "Store" tab on YouTube).
+
+## Exception Handling Examples
+
+### Basic Exception Handling
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+
+public void extractVideo(String url) {
+    try {
+        StreamExtractor extractor = service.getStreamExtractor(url);
+        extractor.fetchPage();
+        String title = extractor.getName();
+        
+    } catch (AgeRestrictedContentException e) {
+        System.err.println("Age-restricted: " + e.getMessage());
+        
+    } catch (GeographicRestrictionException e) {
+        System.err.println("Geo-blocked: " + e.getMessage());
+        
+    } catch (PrivateContentException e) {
+        System.err.println("Private video: " + e.getMessage());
+        
+    } catch (ContentNotAvailableException e) {
+        System.err.println("Content unavailable: " + e.getMessage());
+        
+    } catch (ParsingException e) {
+        System.err.println("Parse error: " + e.getMessage());
+        
+    } catch (ReCaptchaException e) {
+        System.err.println("CAPTCHA required at: " + e.getUrl());
+        
+    } catch (ExtractionException e) {
+        System.err.println("Extraction failed: " + e.getMessage());
+    }
+}
+```
+
+### Specific Service Exceptions
+
+```java
+public void extractYouTubeVideo(String url) {
+    try {
+        StreamExtractor extractor = YouTube.getStreamExtractor(url);
+        extractor.fetchPage();
+        
+    } catch (YoutubeMusicPremiumContentException e) {
+        System.err.println("Requires YouTube Music Premium");
+        // Offer user option to subscribe
+        
+    } catch (AccountTerminatedException e) {
+        if (e.getReason() == AccountTerminatedException.Reason.VIOLATION) {
+            System.err.println("Channel terminated for violations");
+        } else {
+            System.err.println("Channel no longer available");
+        }
+    }
+}
+
+public void extractSoundCloudTrack(String url) {
+    try {
+        StreamExtractor extractor = SoundCloud.getStreamExtractor(url);
+        extractor.fetchPage();
+        
+    } catch (SoundCloudGoPlusContentException e) {
+        System.err.println("Requires SoundCloud Go+ subscription");
+    }
+}
+```
+
+### Categorizing Exceptions
+
+```java
+public enum ExtractionErrorType {
+    UNAVAILABLE,
+    PARSING_ERROR,
+    CAPTCHA_REQUIRED,
+    UNSUPPORTED,
+    NETWORK_ERROR
+}
+
+public ExtractionErrorType categorizeError(Exception e) {
+    if (e instanceof ContentNotAvailableException) {
+        return ExtractionErrorType.UNAVAILABLE;
+    } else if (e instanceof ReCaptchaException) {
+        return ExtractionErrorType.CAPTCHA_REQUIRED;
+    } else if (e instanceof ContentNotSupportedException) {
+        return ExtractionErrorType.UNSUPPORTED;
+    } else if (e instanceof ParsingException) {
+        return ExtractionErrorType.PARSING_ERROR;
+    } else if (e instanceof IOException) {
+        return ExtractionErrorType.NETWORK_ERROR;
+    }
+    return ExtractionErrorType.PARSING_ERROR;
+}
+```
+
+### Recovery Strategies
+
+```java
+public void extractWithRetry(String url, int maxRetries) {
+    int attempt = 0;
+    
+    while (attempt < maxRetries) {
+        try {
+            StreamExtractor extractor = service.getStreamExtractor(url);
+            extractor.fetchPage();
+            return; // Success
+            
+        } catch (ReCaptchaException e) {
+            System.err.println("CAPTCHA detected, cannot retry");
+            throw e; // Can't recover automatically
+            
+        } catch (ContentNotAvailableException e) {
+            System.err.println("Content unavailable, cannot retry");
+            throw e; // Can't recover
+            
+        } catch (ParsingException e) {
+            attempt++;
+            if (attempt >= maxRetries) {
+                throw e;
+            }
+            System.err.println("Parse error, retrying... (" + attempt + ")");
+            
+        } catch (IOException e) {
+            attempt++;
+            if (attempt >= maxRetries) {
+                throw e;
+            }
+            System.err.println("Network error, retrying... (" + attempt + ")");
+            try {
+                Thread.sleep(1000 * attempt); // Exponential backoff
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ie);
+            }
+        }
+    }
+}
+```
+
+## Best Practices
+
+### Catch Specific Exceptions First
+
+Always catch more specific exceptions before general ones:
+
+```java
+try {
+    // Extraction code
+} catch (AgeRestrictedContentException e) {
+    // Handle age restriction
+} catch (ContentNotAvailableException e) {
+    // Handle other availability issues
+} catch (ParsingException e) {
+    // Handle parsing errors
+} catch (ExtractionException e) {
+    // Handle any other extraction error
+}
+```
+
+### Provide Context in Error Messages
+
+```java
+try {
+    String title = extractor.getName();
+} catch (ParsingException e) {
+    throw new ParsingException(
+        "Failed to extract video title from URL: " + url,
+        e
+    );
+}
+```
+
+### Log Appropriately
+
+```java
+try {
+    // Extract content
+} catch (FoundAdException e) {
+    // Ads are expected, log at debug level
+    logger.debug("Skipping ad item");
+} catch (ContentNotAvailableException e) {
+    // Availability issues are common, log at info level
+    logger.info("Content not available: " + e.getMessage());
+} catch (ParsingException e) {
+    // Parsing errors are more serious, log at warning level
+    logger.warn("Failed to parse content", e);
+}
+```
+
+## Related Classes
+
+- [Downloader](/api/utilities/downloader) - Throws IOException and ReCaptchaException
+- [Localization](/api/utilities/localization) - Throws ParsingException for invalid codes

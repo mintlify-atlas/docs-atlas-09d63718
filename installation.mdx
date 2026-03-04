@@ -1,0 +1,194 @@
+---
+title: Installation
+description: Add NewPipe Extractor to your Java project using Gradle or Maven
+---
+
+# Installation
+
+NewPipe Extractor is available through JitPack's Maven repository. Follow the instructions below to add it to your project.
+
+## Requirements
+
+<Note>
+  NewPipe Extractor requires **Java 11** or higher.
+</Note>
+
+For Android projects with `minSdk` below 33, [core library desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring) with the `desugar_jdk_libs_nio` artifact is required.
+
+## Gradle Setup
+
+<Steps>
+  <Step title="Add JitPack Repository">
+    Add the JitPack repository to your `build.gradle` or `build.gradle.kts` file:
+
+    <CodeGroup>
+      ```kotlin Kotlin DSL (build.gradle.kts)
+      repositories {
+          maven { url = uri("https://jitpack.io") }
+      }
+      ```
+
+      ```groovy Groovy DSL (build.gradle)
+      repositories {
+          maven { url 'https://jitpack.io' }
+      }
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add Dependency">
+    Add NewPipe Extractor to your dependencies. Replace `INSERT_VERSION_HERE` with the [latest release version](https://github.com/TeamNewPipe/NewPipeExtractor/releases/latest).
+
+    <CodeGroup>
+      ```kotlin Kotlin DSL (build.gradle.kts)
+      dependencies {
+          implementation("com.github.teamnewpipe:NewPipeExtractor:INSERT_VERSION_HERE")
+      }
+      ```
+
+      ```groovy Groovy DSL (build.gradle)
+      dependencies {
+          implementation 'com.github.teamnewpipe:NewPipeExtractor:INSERT_VERSION_HERE'
+      }
+      ```
+    </CodeGroup>
+
+    <Tip>
+      The latest stable version is **v0.26.0**. Check the [releases page](https://github.com/TeamNewPipe/NewPipeExtractor/releases) for the most current version.
+    </Tip>
+  </Step>
+
+  <Step title="Configure ProGuard (Optional)">
+    If you're using tools to minimize your project (like ProGuard or R8), add these rules to keep required files:
+
+    ```proguard
+    ## Rules for NewPipeExtractor
+    -keep class org.mozilla.javascript.** { *; }
+    -keep class org.mozilla.classfile.ClassFileWriter
+    -dontwarn org.mozilla.javascript.tools.**
+    ```
+  </Step>
+</Steps>
+
+## Maven Setup
+
+<Steps>
+  <Step title="Add JitPack Repository">
+    Add the JitPack repository to your `pom.xml`:
+
+    ```xml pom.xml
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+    ```
+  </Step>
+
+  <Step title="Add Dependency">
+    Add NewPipe Extractor to your dependencies:
+
+    ```xml pom.xml
+    <dependency>
+        <groupId>com.github.teamnewpipe</groupId>
+        <artifactId>NewPipeExtractor</artifactId>
+        <version>INSERT_VERSION_HERE</version>
+    </dependency>
+    ```
+  </Step>
+</Steps>
+
+## Alternative Installation Methods
+
+### Maven Central Snapshots
+
+Snapshot builds based on recent commits are available on Maven Central's snapshot repository. These are useful for testing the latest changes:
+
+```kotlin build.gradle.kts
+repositories {
+    maven(url = "https://central.sonatype.com/repository/maven-snapshots/")
+}
+
+dependencies {
+    implementation("net.newpipe:extractor:${LAST_COMMIT_SHORT_HASH}-SNAPSHOT")
+}
+```
+
+<Warning>
+  Snapshot versions are based on the commit's short hash (e.g., `git rev-parse --short HEAD`) and are only available for 90 days from the publication date.
+</Warning>
+
+### Local Development Build
+
+For testing local changes, you can build and use the library from your local Maven repository:
+
+<Steps>
+  <Step title="Clone the Repository">
+    ```bash
+    git clone https://github.com/TeamNewPipe/NewPipeExtractor.git
+    cd NewPipeExtractor
+    ```
+  </Step>
+
+  <Step title="Build and Install Locally">
+    ```bash
+    ./gradlew install
+    ```
+  </Step>
+
+  <Step title="Use Local Repository">
+    Add `mavenLocal()` to your project's repositories:
+
+    ```kotlin build.gradle.kts
+    repositories {
+        mavenLocal()  // Add this first to give it priority
+        maven { url = uri("https://jitpack.io") }
+    }
+
+    dependencies {
+        implementation("com.github.teamnewpipe:NewPipeExtractor:LOCAL_SNAPSHOT")
+    }
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  For Android Studio users: After running `./gradlew install`, use **File → Sync with File System** to refresh the library in your project.
+</Tip>
+
+### Gradle Composite Build
+
+For rapid development and testing, you can use Gradle's composite build feature:
+
+```groovy settings.gradle
+includeBuild('../NewPipeExtractor') {
+    dependencySubstitution {
+        substitute module('com.github.teamnewpipe:NewPipeExtractor') with project(':extractor')
+    }
+}
+```
+
+This approach automatically uses your local NewPipeExtractor source without needing to publish to Maven.
+
+## Verification
+
+To verify the installation, create a simple test class:
+
+```java
+import org.schabi.newpipe.extractor.NewPipe;
+import org.schabi.newpipe.extractor.ServiceList;
+
+public class VerifyInstallation {
+    public static void main(String[] args) {
+        System.out.println("NewPipe Extractor installed successfully!");
+        System.out.println("Available services: " + ServiceList.all().size());
+    }
+}
+```
+
+If this compiles and runs without errors, NewPipe Extractor is correctly installed.
+
+<Card title="Next: Quick Start Guide" icon="rocket" href="/quickstart">
+  Learn how to initialize NewPipe and extract your first stream
+</Card>

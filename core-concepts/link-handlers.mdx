@@ -1,0 +1,618 @@
+---
+title: Link Handler System
+description: Understanding URL parsing, validation, and ID extraction in NewPipe Extractor
+---
+
+The Link Handler system provides a robust framework for parsing URLs, extracting IDs, and validating links across different streaming platforms.
+
+## Core Concepts
+
+Link Handlers serve three primary purposes:
+
+1. **URL Validation**: Check if a URL belongs to a specific service and content type
+2. **ID Extraction**: Extract platform-specific identifiers from URLs
+3. **URL Generation**: Construct canonical URLs from IDs
+
+## LinkHandler Class
+
+The `LinkHandler` class is a simple data container:
+
+```java
+public class LinkHandler implements Serializable {
+    protected final String originalUrl;  // URL as provided by user
+    protected final String url;          // Canonical URL
+    protected final String id;           // Extracted ID
+    
+    public LinkHandler(String originalUrl, String url, String id) {
+        this.originalUrl = originalUrl;
+        this.url = url;
+        this.id = id;
+    }
+    
+    public String getOriginalUrl() {
+        return originalUrl;
+    }
+    
+    public String getUrl() {
+        return url;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getBaseUrl() throws ParsingException {
+        return Utils.getBaseUrl(url);
+    }
+}
+```
+
+### Properties Explained
+
+<Tabs>
+  <Tab title="Original URL">
+    The URL exactly as provided by the user:
+    
+    ```java
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s"
+    ```
+    
+    Includes all query parameters and fragments.
+  </Tab>
+  
+  <Tab title="Canonical URL">
+    The cleaned, standardized URL:
+    
+    ```java
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    ```
+    
+    Used for equality checks and deduplication.
+  </Tab>
+  
+  <Tab title="ID">
+    The platform-specific identifier:
+    
+    ```java
+    "dQw4w9WgXcQ"
+    ```
+    
+    Used to construct API requests and URLs.
+  </Tab>
+  <Tab title="Base URL">
+    The domain portion of the URL:
+    
+    ```java
+    "https://www.youtube.com"
+    ```
+    
+    Useful for federated services (e.g., PeerTube instances).
+  </Tab>
+</Tabs>
+
+## LinkHandlerFactory
+
+The factory pattern is used to create `LinkHandler` instances:
+
+```java
+public abstract class LinkHandlerFactory {
+    // Abstract methods to implement
+    public abstract String getId(String url) 
+            throws ParsingException;
+    
+    public abstract String getUrl(String id) 
+            throws ParsingException;
+    
+    public abstract boolean onAcceptUrl(String url) 
+            throws ParsingException;
+    
+    // Optional: URL generation with base URL
+    public String getUrl(String id, String baseUrl) 
+            throws ParsingException {
+        return getUrl(id);
+    }
+    
+    // Factory methods
+    public LinkHandler fromUrl(String url) throws ParsingException;
+    public LinkHandler fromId(String id) throws ParsingException;
+    public boolean acceptUrl(String url) throws ParsingException;
+}
+```
+
+### Factory Methods
+
+#### Creating from URL
+
+```java
+public LinkHandler fromUrl(String url) throws ParsingException {
+    if (Utils.isNullOrEmpty(url)) {
+        throw new IllegalArgumentException("The url is null or empty");
+    }
+    
+    // Follow Google redirects
+    String polishedUrl = Utils.followGoogleRedirectIfNeeded(url);
+    String baseUrl = Utils.getBaseUrl(polishedUrl);
+    
+    return fromUrl(polishedUrl, baseUrl);
+}
+
+public LinkHandler fromUrl(String url, String baseUrl) 
+        throws ParsingException {
+    Objects.requireNonNull(url, "URL cannot be null");
+    
+    if (!acceptUrl(url)) {
+        throw new ParsingException("URL not accepted: " + url);
+    }
+    
+    String id = getId(url);
+    return new LinkHandler(url, getUrl(id, baseUrl), id);
+}
+```
+
+#### Creating from ID
+
+```java
+public LinkHandler fromId(String id) throws ParsingException {
+    Objects.requireNonNull(id, "ID cannot be null");
+    String url = getUrl(id);
+    return new LinkHandler(url, url, id);
+}
+
+public LinkHandler fromId(String id, String baseUrl) 
+        throws ParsingException {
+    Objects.requireNonNull(id, "ID cannot be null");
+    String url = getUrl(id, baseUrl);
+    return new LinkHandler(url, url, id);
+}
+```
+
+#### URL Validation
+
+```java
+public boolean acceptUrl(String url) throws ParsingException {
+    return onAcceptUrl(url);
+}
+```
+
+## Implementation Example
+
+Here's how YouTube implements a stream link handler factory:
+
+```java
+public class YoutubeStreamLinkHandlerFactory extends LinkHandlerFactory {
+    private static final YoutubeStreamLinkHandlerFactory INSTANCE = 
+        new YoutubeStreamLinkHandlerFactory();
+    
+    public static YoutubeStreamLinkHandlerFactory getInstance() {
+        return INSTANCE;
+    }
+    
+    @Override
+    public String getId(String url) throws ParsingException {
+        // Handle various YouTube URL formats
+        if (url.contains("youtube.com/watch")) {
+            return Parser.matchGroup1("[?&]v=([a-zA-Z0-9_-]{11})", url);
+        } else if (url.contains("youtu.be/")) {
+            return Parser.matchGroup1("youtu\\.be/([a-zA-Z0-9_-]{11})", url);
+        } else if (url.contains("youtube.com/embed/")) {
+            return Parser.matchGroup1("embed/([a-zA-Z0-9_-]{11})", url);
+        }
+        throw new ParsingException("Could not extract ID from URL: " + url);
+    }
+    
+    @Override
+    public String getUrl(String id) throws ParsingException {
+        return "https://www.youtube.com/watch?v=" + id;
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        // Accept various YouTube URL patterns
+        return url.contains("youtube.com/watch") ||
+               url.contains("youtu.be/") ||
+               url.contains("youtube.com/embed/") ||
+               url.contains("youtube.com/shorts/");
+    }
+}
+```
+
+### Usage
+
+```java
+LinkHandlerFactory factory = YoutubeStreamLinkHandlerFactory.getInstance();
+
+// From URL
+LinkHandler handler = factory.fromUrl(
+    "https://youtu.be/dQw4w9WgXcQ?t=30"
+);
+String id = handler.getId();              // "dQw4w9WgXcQ"
+String canonical = handler.getUrl();      // "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+// From ID
+LinkHandler handler2 = factory.fromId("dQw4w9WgXcQ");
+String url = handler2.getUrl();           // "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+// Validation
+boolean valid = factory.acceptUrl(
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+);  // true
+```
+
+## ListLinkHandler
+
+`ListLinkHandler` extends `LinkHandler` with support for content filters and sorting:
+
+```java
+public class ListLinkHandler extends LinkHandler {
+    protected final List<String> contentFilters;
+    protected final String sortFilter;
+    
+    public ListLinkHandler(String originalUrl,
+                          String url,
+                          String id,
+                          List<String> contentFilters,
+                          String sortFilter) {
+        super(originalUrl, url, id);
+        this.contentFilters = Collections.unmodifiableList(contentFilters);
+        this.sortFilter = sortFilter;
+    }
+    
+    public List<String> getContentFilters() {
+        return contentFilters;
+    }
+    
+    public String getSortFilter() {
+        return sortFilter;
+    }
+}
+```
+
+### Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Channel Tabs" icon="folder">
+    Filter channel content by type (videos, playlists, live)
+    
+    ```java
+    contentFilters: ["videos"]
+    sortFilter: "date"
+    ```
+  </Card>
+  
+  <Card title="Search Results" icon="search">
+    Filter search results by content type
+    
+    ```java
+    contentFilters: ["video", "hd"]
+    sortFilter: "relevance"
+    ```
+  </Card>
+  <Card title="Playlists" icon="list">
+    Apply sorting to playlist items
+    
+    ```java
+    contentFilters: []
+    sortFilter: "popularity"
+    ```
+  </Card>
+  <Card title="Comments" icon="comment">
+    Sort comments by criteria
+    
+    ```java
+    contentFilters: []
+    sortFilter: "top"
+    ```
+  </Card>
+</CardGroup>
+
+## ListLinkHandlerFactory
+
+```java
+public abstract class ListLinkHandlerFactory extends LinkHandlerFactory {
+    
+    // Create from query with filters
+    public ListLinkHandler fromQuery(String id,
+                                     List<String> contentFilters,
+                                     String sortFilter) 
+            throws ParsingException {
+        String url = getUrl(id, contentFilters, sortFilter);
+        return new ListLinkHandler(url, url, id, contentFilters, sortFilter);
+    }
+    
+    // Override to include filters in URL
+    public abstract String getUrl(String id,
+                                  List<String> contentFilters,
+                                  String sortFilter) 
+            throws ParsingException;
+}
+```
+
+### Example Implementation
+
+```java
+public class YoutubeChannelLinkHandlerFactory 
+        extends ListLinkHandlerFactory {
+    
+    @Override
+    public String getUrl(String id,
+                        List<String> contentFilters,
+                        String sortFilter) throws ParsingException {
+        String url = "https://www.youtube.com/channel/" + id;
+        
+        // Add tab filter
+        if (!contentFilters.isEmpty()) {
+            String tab = contentFilters.get(0);
+            if (tab.equals("videos")) {
+                url += "/videos";
+            } else if (tab.equals("playlists")) {
+                url += "/playlists";
+            }
+        }
+        
+        // Add sort parameter
+        if (sortFilter != null && !sortFilter.isEmpty()) {
+            url += "?sort=" + sortFilter;
+        }
+        
+        return url;
+    }
+    
+    @Override
+    public String getId(String url) throws ParsingException {
+        // Extract channel ID from various URL formats
+        if (url.contains("/channel/")) {
+            return Parser.matchGroup1("/channel/([^/?]+)", url);
+        } else if (url.contains("/@")) {
+            // Handle @username format - requires API lookup
+            String username = Parser.matchGroup1("/@([^/?]+)", url);
+            return resolveUsernameToId(username);
+        }
+        throw new ParsingException("Could not extract channel ID");
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        return url.contains("/channel/") || 
+               url.contains("/@");
+    }
+}
+```
+
+## SearchQueryHandler
+
+`SearchQueryHandler` is specialized for search queries:
+
+```java
+public class SearchQueryHandler extends ListLinkHandler {
+    protected final String searchString;
+    
+    public SearchQueryHandler(String originalUrl,
+                             String url,
+                             String searchString,
+                             List<String> contentFilters,
+                             String sortFilter) {
+        super(originalUrl, url, searchString, contentFilters, sortFilter);
+        this.searchString = searchString;
+    }
+    
+    public String getSearchString() {
+        return searchString;
+    }
+}
+```
+
+### SearchQueryHandlerFactory
+
+```java
+public abstract class SearchQueryHandlerFactory 
+        extends ListLinkHandlerFactory {
+    
+    public SearchQueryHandler fromQuery(String query,
+                                        List<String> contentFilters,
+                                        String sortFilter) 
+            throws ParsingException {
+        String url = getUrl(query, contentFilters, sortFilter);
+        return new SearchQueryHandler(
+            url, url, query, contentFilters, sortFilter
+        );
+    }
+}
+```
+
+### Example: YouTube Search
+
+```java
+public class YoutubeSearchQueryHandlerFactory 
+        extends SearchQueryHandlerFactory {
+    
+    @Override
+    public String getUrl(String query,
+                        List<String> contentFilters,
+                        String sortFilter) throws ParsingException {
+        try {
+            String url = "https://www.youtube.com/results?search_query=" 
+                + URLEncoder.encode(query, "UTF-8");
+            
+            // Add content type filter
+            if (!contentFilters.isEmpty()) {
+                String filter = contentFilters.get(0);
+                if (filter.equals("video")) {
+                    url += "&sp=EgIQAQ%253D%253D";  // Video filter
+                } else if (filter.equals("channel")) {
+                    url += "&sp=EgIQAg%253D%253D";  // Channel filter
+                }
+            }
+            
+            return url;
+        } catch (UnsupportedEncodingException e) {
+            throw new ParsingException("Could not encode query", e);
+        }
+    }
+    
+    @Override
+    public String getId(String url) {
+        // For search, ID is the query itself
+        try {
+            return URLDecoder.decode(
+                Parser.matchGroup1("search_query=([^&]+)", url),
+                "UTF-8"
+            );
+        } catch (Exception e) {
+            return "";
+        }
+    }
+    
+    @Override
+    public boolean onAcceptUrl(String url) {
+        return url.contains("youtube.com/results");
+    }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use Singleton Pattern">
+    Link handler factories should be singletons to avoid unnecessary instantiation:
+    
+    ```java
+    private static final MyLinkHandlerFactory INSTANCE = 
+        new MyLinkHandlerFactory();
+    
+    public static MyLinkHandlerFactory getInstance() {
+        return INSTANCE;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Handle Multiple URL Formats">
+    Support all variations of URLs your platform uses:
+    
+    ```java
+    @Override
+    public String getId(String url) throws ParsingException {
+        // youtube.com/watch?v=ID
+        if (url.contains("youtube.com/watch")) {
+            return extractFromWatchUrl(url);
+        }
+        // youtu.be/ID
+        else if (url.contains("youtu.be/")) {
+            return extractFromShortUrl(url);
+        }
+        // youtube.com/embed/ID
+        else if (url.contains("/embed/")) {
+            return extractFromEmbedUrl(url);
+        }
+        throw new ParsingException("Unknown URL format");
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Follow URL Redirects">
+    The framework automatically handles Google redirects, but you may need to handle service-specific redirects:
+    
+    ```java
+    public LinkHandler fromUrl(String url) throws ParsingException {
+        // Google redirects handled automatically
+        String polishedUrl = Utils.followGoogleRedirectIfNeeded(url);
+        
+        // Handle service-specific redirects if needed
+        polishedUrl = followServiceRedirects(polishedUrl);
+        
+        return super.fromUrl(polishedUrl);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Validate IDs">
+    Ensure extracted IDs match expected format:
+    
+    ```java
+    @Override
+    public String getId(String url) throws ParsingException {
+        String id = Parser.matchGroup1("v=([a-zA-Z0-9_-]{11})", url);
+        
+        // Validate ID format
+        if (id == null || id.length() != 11) {
+            throw new ParsingException("Invalid video ID: " + id);
+        }
+        
+        return id;
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="Support Federated Services">
+    For federated platforms (PeerTube, Mastodon), include base URL:
+    
+    ```java
+    @Override
+    public String getUrl(String id, String baseUrl) 
+            throws ParsingException {
+        if (baseUrl == null || baseUrl.isEmpty()) {
+            throw new ParsingException("Base URL required");
+        }
+        return baseUrl + "/videos/" + id;
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Common Patterns
+
+### URL Pattern Matching
+
+```java
+// Regex matching
+String id = Parser.matchGroup1("pattern_here", url);
+
+// String contains check
+if (url.contains("/watch")) {
+    // ...
+}
+
+// Multiple patterns
+for (String pattern : ACCEPTED_PATTERNS) {
+    try {
+        return Parser.matchGroup1(pattern, url);
+    } catch (Parser.RegexException e) {
+        // Try next pattern
+    }
+}
+```
+
+### Base URL Handling
+
+```java
+// Extract base URL
+String baseUrl = Utils.getBaseUrl(url);
+// "https://www.youtube.com"
+
+// Use in URL construction
+String fullUrl = baseUrl + "/watch?v=" + id;
+```
+
+## Error Messages
+
+Provide clear error messages for debugging:
+
+```java
+throw new ParsingException(
+    "Could not extract ID from URL: " + url + 
+    ". Expected format: youtube.com/watch?v=ID"
+);
+```
+
+## Related Documentation
+
+<CardGroup cols={3}>
+  <Card title="Services" icon="server" href="/core-concepts/services">
+    Learn about StreamingService
+  </Card>
+  <Card title="Extractors" icon="download" href="/core-concepts/extractors">
+    Understand data extraction
+  </Card>
+  <Card title="Overview" icon="book" href="/core-concepts/overview">
+    Architecture overview
+  </Card>
+</CardGroup>

@@ -1,0 +1,467 @@
+---
+title: 'Search'
+description: 'Learn how to perform searches across different content types and services'
+---
+
+## Overview
+
+The `SearchExtractor` class enables searching for content across supported streaming services. You can search for videos, channels, playlists, and other content types depending on service support.
+
+## Basic Search
+
+<Steps>
+  <Step title="Perform a Simple Search">
+    Use the service's search functionality:
+
+    ```java
+    import org.schabi.newpipe.extractor.*;
+    import org.schabi.newpipe.extractor.search.*;
+    
+    // Initialize NewPipe first
+    NewPipe.init(yourDownloader);
+    
+    try {
+        // Get a service (e.g., YouTube)
+        StreamingService service = NewPipe.getService("YouTube");
+        
+        // Perform search
+        String searchQuery = "NewPipe tutorial";
+        SearchExtractor extractor = service.getSearchExtractor(searchQuery);
+        extractor.fetchPage();
+        
+        // Get search results
+        ListExtractor.InfoItemsPage<InfoItem> results = 
+            extractor.getInitialPage();
+        
+        for (InfoItem item : results.getItems()) {
+            System.out.println(item.getName());
+        }
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    ```
+  </Step>
+
+  <Step title="Filter by Content Type">
+    Search for specific content types:
+
+    ```java
+    import org.schabi.newpipe.extractor.linkhandler.SearchQueryHandler;
+    import java.util.List;
+    
+    StreamingService service = NewPipe.getService("YouTube");
+    
+    // Get available filters for the service
+    List<String> contentFilters = List.of("videos");
+    // Other options: "channels", "playlists", "music_songs", etc.
+    
+    // Create search query handler with filters
+    SearchQueryHandler queryHandler = service
+        .getSearchQHFactory()
+        .fromQuery("search term", contentFilters, "");
+    
+    SearchExtractor extractor = service.getSearchExtractor(queryHandler);
+    extractor.fetchPage();
+    
+    ListExtractor.InfoItemsPage<InfoItem> results = 
+        extractor.getInitialPage();
+    ```
+  </Step>
+
+  <Step title="Handle Search Results">
+    Process different types of search results:
+
+    ```java
+    import org.schabi.newpipe.extractor.stream.StreamInfoItem;
+    import org.schabi.newpipe.extractor.channel.ChannelInfoItem;
+    import org.schabi.newpipe.extractor.playlist.PlaylistInfoItem;
+    
+    ListExtractor.InfoItemsPage<InfoItem> results = 
+        extractor.getInitialPage();
+    
+    for (InfoItem item : results.getItems()) {
+        if (item instanceof StreamInfoItem) {
+            StreamInfoItem stream = (StreamInfoItem) item;
+            System.out.println("Video: " + stream.getName());
+            System.out.println("Uploader: " + stream.getUploaderName());
+            
+        } else if (item instanceof ChannelInfoItem) {
+            ChannelInfoItem channel = (ChannelInfoItem) item;
+            System.out.println("Channel: " + channel.getName());
+            System.out.println("Subscribers: " + 
+                channel.getSubscriberCount());
+            
+        } else if (item instanceof PlaylistInfoItem) {
+            PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+            System.out.println("Playlist: " + playlist.getName());
+            System.out.println("Videos: " + playlist.getStreamCount());
+        }
+    }
+    ```
+  </Step>
+</Steps>
+
+## Search Metadata
+
+Access search-specific information:
+
+<CodeGroup>
+```java Search Query
+SearchExtractor extractor = service.getSearchExtractor("query");
+extractor.fetchPage();
+
+// Get the search query string
+String searchString = extractor.getSearchString();
+System.out.println("Searching for: " + searchString);
+
+// Get the original URL used for search
+String url = extractor.getUrl();
+System.out.println("Search URL: " + url);
+```
+
+```java Search Suggestions
+SearchExtractor extractor = service.getSearchExtractor("pewdeipie");
+extractor.fetchPage();
+
+// Check if search was corrected
+boolean corrected = extractor.isCorrectedSearch();
+if (corrected) {
+    String suggestion = extractor.getSearchSuggestion();
+    System.out.println("Did you mean: " + suggestion);
+    // e.g., "Did you mean: pewdiepie"
+}
+
+// Get search suggestion even without correction
+String suggestion = extractor.getSearchSuggestion();
+if (!suggestion.isEmpty()) {
+    System.out.println("Related search: " + suggestion);
+}
+```
+
+```java Meta Information
+import org.schabi.newpipe.extractor.MetaInfo;
+
+SearchExtractor extractor = service.getSearchExtractor("Covid-19");
+extractor.fetchPage();
+
+// Get meta information (e.g., information boxes)
+List<MetaInfo> metaInfo = extractor.getMetaInfo();
+
+for (MetaInfo info : metaInfo) {
+    System.out.println("Title: " + info.getTitle());
+    System.out.println("Content: " + info.getContent().getContent());
+    
+    // Get URLs from meta info
+    List<MetaInfo.UrlInfo> urls = info.getUrls();
+    for (MetaInfo.UrlInfo urlInfo : urls) {
+        System.out.println("Link: " + urlInfo.getUrl());
+    }
+}
+```
+</CodeGroup>
+
+## Search Pagination
+
+Load more search results:
+
+```java
+import org.schabi.newpipe.extractor.Page;
+import org.schabi.newpipe.extractor.ListExtractor.InfoItemsPage;
+
+SearchExtractor extractor = service.getSearchExtractor("search query");
+extractor.fetchPage();
+
+// Get initial results
+InfoItemsPage<InfoItem> initialResults = extractor.getInitialPage();
+List<InfoItem> items = new ArrayList<>(initialResults.getItems());
+
+System.out.println("Initial results: " + items.size());
+
+// Check for more pages
+Page nextPage = initialResults.getNextPage();
+
+while (nextPage != null) {
+    // Get next page of results
+    InfoItemsPage<InfoItem> page = extractor.getPage(nextPage);
+    items.addAll(page.getItems());
+    
+    System.out.println("Total results so far: " + items.size());
+    
+    // Get next page
+    nextPage = page.getNextPage();
+    
+    // Optional: limit number of pages
+    if (items.size() >= 100) {
+        break;
+    }
+}
+
+System.out.println("Final total: " + items.size() + " results");
+```
+
+## Content Filters
+
+Different services support different content filters:
+
+```java
+import org.schabi.newpipe.extractor.linkhandler.SearchQueryHandlerFactory;
+
+StreamingService service = NewPipe.getService("YouTube");
+SearchQueryHandlerFactory factory = service.getSearchQHFactory();
+
+// Available content filters for YouTube:
+// - "all" (default)
+// - "videos"
+// - "channels"
+// - "playlists"
+// - "music_songs"
+// - "music_videos"
+// - "music_albums"
+// - "music_playlists"
+
+// Search only for channels
+List<String> filters = List.of("channels");
+SearchQueryHandler handler = factory.fromQuery(
+    "search query", 
+    filters, 
+    "" // sort filter (empty for default)
+);
+
+SearchExtractor extractor = service.getSearchExtractor(handler);
+extractor.fetchPage();
+
+InfoItemsPage<InfoItem> results = extractor.getInitialPage();
+// Results will only contain ChannelInfoItem instances
+```
+
+## Sort Filters
+
+Some services support sorting search results:
+
+```java
+// Sort options vary by service
+// Common options: "", "upload_date", "rating", "view_count"
+
+String searchQuery = "tutorial";
+List<String> contentFilters = List.of("videos");
+String sortFilter = "upload_date"; // Sort by upload date
+
+SearchQueryHandler handler = service
+    .getSearchQHFactory()
+    .fromQuery(searchQuery, contentFilters, sortFilter);
+
+SearchExtractor extractor = service.getSearchExtractor(handler);
+extractor.fetchPage();
+
+InfoItemsPage<InfoItem> results = extractor.getInitialPage();
+// Results will be sorted by upload date
+```
+
+## Handling Different Result Types
+
+<CodeGroup>
+```java Video Results
+for (InfoItem item : results.getItems()) {
+    if (item instanceof StreamInfoItem) {
+        StreamInfoItem stream = (StreamInfoItem) item;
+        
+        System.out.println("Title: " + stream.getName());
+        System.out.println("URL: " + stream.getUrl());
+        System.out.println("Uploader: " + stream.getUploaderName());
+        System.out.println("Duration: " + stream.getDuration());
+        System.out.println("Views: " + stream.getViewCount());
+        
+        // Check if live
+        if (stream.getStreamType() == StreamType.LIVE_STREAM) {
+            System.out.println("[LIVE]");
+        }
+    }
+}
+```
+
+```java Channel Results
+for (InfoItem item : results.getItems()) {
+    if (item instanceof ChannelInfoItem) {
+        ChannelInfoItem channel = (ChannelInfoItem) item;
+        
+        System.out.println("Channel: " + channel.getName());
+        System.out.println("URL: " + channel.getUrl());
+        System.out.println("Subscribers: " + 
+            channel.getSubscriberCount());
+        System.out.println("Verified: " + channel.isVerified());
+        
+        // Get channel description
+        String description = channel.getDescription();
+        if (description != null) {
+            System.out.println("Description: " + description);
+        }
+    }
+}
+```
+
+```java Playlist Results
+for (InfoItem item : results.getItems()) {
+    if (item instanceof PlaylistInfoItem) {
+        PlaylistInfoItem playlist = (PlaylistInfoItem) item;
+        
+        System.out.println("Playlist: " + playlist.getName());
+        System.out.println("URL: " + playlist.getUrl());
+        System.out.println("Uploader: " + playlist.getUploaderName());
+        
+        long streamCount = playlist.getStreamCount();
+        if (streamCount != -1) {
+            System.out.println("Videos: " + streamCount);
+        }
+    }
+}
+```
+</CodeGroup>
+
+## Search Suggestions
+
+Get search suggestions before performing a search:
+
+```java
+import org.schabi.newpipe.extractor.suggestion.SuggestionExtractor;
+
+StreamingService service = NewPipe.getService("YouTube");
+SuggestionExtractor suggestionExtractor = 
+    service.getSuggestionExtractor();
+
+// Get suggestions for partial query
+List<String> suggestions = suggestionExtractor
+    .suggestionList("newpipe");
+
+System.out.println("Suggestions:");
+for (String suggestion : suggestions) {
+    System.out.println("- " + suggestion);
+}
+// Output examples:
+// - newpipe app
+// - newpipe tutorial
+// - newpipe download
+```
+
+## Error Handling
+
+<Warning>
+  Search queries may fail due to network issues, invalid queries, or service-specific errors.
+</Warning>
+
+```java
+import org.schabi.newpipe.extractor.exceptions.*;
+import org.schabi.newpipe.extractor.search.SearchExtractor.NothingFoundException;
+
+try {
+    SearchExtractor extractor = service.getSearchExtractor(query);
+    extractor.fetchPage();
+    
+    InfoItemsPage<InfoItem> results = extractor.getInitialPage();
+    
+    if (results.getItems().isEmpty()) {
+        System.out.println("No results found");
+    } else {
+        System.out.println("Found " + results.getItems().size() + 
+                         " results");
+    }
+    
+} catch (NothingFoundException e) {
+    System.err.println("No results found for: " + query);
+} catch (ReCaptchaException e) {
+    System.err.println("reCAPTCHA required: " + e.getUrl());
+} catch (ExtractionException e) {
+    System.err.println("Search failed: " + e.getMessage());
+} catch (IOException e) {
+    System.err.println("Network error: " + e.getMessage());
+}
+```
+
+## Complete Example
+
+```java
+import org.schabi.newpipe.extractor.*;
+import org.schabi.newpipe.extractor.search.*;
+import org.schabi.newpipe.extractor.stream.*;
+import org.schabi.newpipe.extractor.channel.*;
+import java.util.*;
+
+public class SearchExample {
+    public static void main(String[] args) {
+        // Initialize
+        NewPipe.init(yourDownloader);
+        
+        try {
+            // Get service
+            StreamingService service = NewPipe.getService("YouTube");
+            
+            // Set up search with filters
+            String query = "open source";
+            List<String> filters = List.of("videos");
+            
+            SearchExtractor extractor = service.getSearchExtractor(
+                query, filters, ""
+            );
+            extractor.fetchPage();
+            
+            // Check if search was corrected
+            if (extractor.isCorrectedSearch()) {
+                System.out.println("Corrected to: " + 
+                    extractor.getSearchSuggestion());
+            }
+            
+            // Get results
+            ListExtractor.InfoItemsPage<InfoItem> results = 
+                extractor.getInitialPage();
+            
+            System.out.println("\n=== Search Results for '" + query + "' ===");
+            System.out.println("Found " + results.getItems().size() + 
+                             " initial results\n");
+            
+            // Display first 10 results
+            int count = 0;
+            for (InfoItem item : results.getItems()) {
+                if (count >= 10) break;
+                
+                if (item instanceof StreamInfoItem) {
+                    StreamInfoItem stream = (StreamInfoItem) item;
+                    System.out.println((count + 1) + ". " + stream.getName());
+                    System.out.println("   Uploader: " + 
+                        stream.getUploaderName());
+                    System.out.println("   Views: " + 
+                        stream.getViewCount());
+                    System.out.println("   URL: " + stream.getUrl());
+                    System.out.println();
+                    count++;
+                }
+            }
+            
+            // Check for more results
+            if (results.getNextPage() != null) {
+                System.out.println("More results available...");
+            }
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. **Use content filters** - Narrow results to specific content types
+2. **Handle corrected searches** - Check if the service corrected your query
+3. **Implement pagination carefully** - Don't load all results at once
+4. **Check meta information** - Important context may be provided
+5. **Cache search results** - Avoid repeated identical searches
+
+<Tip>
+  Search results may include meta information boxes (like COVID-19 information on YouTube). Always check `getMetaInfo()` for important contextual information.
+</Tip>
+
+## Next Steps
+
+- Learn about [extracting stream data](/guides/extracting-streams)
+- Explore [comment extraction](/guides/comments)
+- Understand [error handling patterns](/guides/error-handling)
