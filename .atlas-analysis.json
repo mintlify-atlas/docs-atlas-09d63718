@@ -1,0 +1,135 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "NewPipe Extractor",
+  "projectDescription": "A Java library for extracting data from streaming sites including YouTube, SoundCloud, Bandcamp, PeerTube, and media.ccc.de",
+  "theme": "aspen",
+  "primaryColor": "#CD201F",
+  "lightColor": "#FF5252",
+  "darkColor": "#B71C1C",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/overview",
+              "core-concepts/services",
+              "core-concepts/extractors",
+              "core-concepts/link-handlers",
+              "core-concepts/localization"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/extracting-streams",
+              "guides/extracting-channels",
+              "guides/extracting-playlists",
+              "guides/search",
+              "guides/comments",
+              "guides/error-handling"
+            ]
+          },
+          {
+            "group": "Supported Services",
+            "pages": [
+              "services/overview",
+              "services/youtube",
+              "services/soundcloud",
+              "services/bandcamp",
+              "services/peertube",
+              "services/mediaccc"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Core API",
+            "pages": [
+              "api/newpipe",
+              "api/streaming-service",
+              "api/service-list"
+            ]
+          },
+          {
+            "group": "Extractors",
+            "pages": [
+              "api/extractors/stream-extractor",
+              "api/extractors/channel-extractor",
+              "api/extractors/playlist-extractor",
+              "api/extractors/search-extractor",
+              "api/extractors/comments-extractor",
+              "api/extractors/kiosk-extractor"
+            ]
+          },
+          {
+            "group": "Info Objects",
+            "pages": [
+              "api/info/stream-info",
+              "api/info/channel-info",
+              "api/info/playlist-info"
+            ]
+          },
+          {
+            "group": "Link Handlers",
+            "pages": [
+              "api/link-handlers/overview",
+              "api/link-handlers/link-handler-factory",
+              "api/link-handlers/list-link-handler-factory",
+              "api/link-handlers/search-query-handler-factory"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "api/utilities/downloader",
+              "api/utilities/localization",
+              "api/utilities/exceptions"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Multi-platform streaming data extraction",
+    "Support for YouTube, SoundCloud, Bandcamp, PeerTube, and media.ccc.de",
+    "Stream, channel, playlist, and comment extraction",
+    "Search functionality across supported platforms",
+    "Localization and content country support",
+    "Extensible service architecture"
+  ],
+  "publicApiSurface": [
+    "NewPipe.init()",
+    "NewPipe.getService()",
+    "NewPipe.getServiceByUrl()",
+    "StreamingService.getStreamExtractor()",
+    "StreamingService.getChannelExtractor()",
+    "StreamingService.getPlaylistExtractor()",
+    "StreamingService.getSearchExtractor()",
+    "StreamingService.getCommentsExtractor()",
+    "StreamInfo.getInfo()",
+    "ChannelInfo.getInfo()",
+    "PlaylistInfo.getInfo()",
+    "Extractor.fetchPage()",
+    "LinkHandlerFactory.fromUrl()",
+    "ServiceList.YouTube",
+    "ServiceList.SoundCloud",
+    "ServiceList.Bandcamp",
+    "ServiceList.PeerTube",
+    "ServiceList.MediaCCC"
+  ]
+}
